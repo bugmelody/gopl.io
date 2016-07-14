@@ -14,8 +14,13 @@ import (
 
 //!+
 type Movie struct {
-	Title  string
-	Year   int  `json:"released"`
+	Title string
+	// marshal 时会使用 released 作为 json 字段名
+	Year int `json:"released"`
+	// marshal 时会使用 color 作为 json 字段名
+	// omitempty: 如果go数据是空,则json不会出现对应的字段
+	// The tag for Color has an additional option, omitempty, which indicates that no JSON output should
+	// be produced if the field has the zero value for its type (false, here) or is otherwise empty.
 	Color  bool `json:"color,omitempty"`
 	Actors []string
 }
