@@ -35,6 +35,8 @@ func main() {
 
 //!+alt
 func nonempty2(strings []string) []string {
+	// 由于 out 和 strings 共享底层数组，在for range 循环中，每次只会 extend out 这个slice，并
+	// 不会 reallocation。最后函数返回的时候，out和strings仍然共享同一个底层数组
 	out := strings[:0] // zero-length slice of original
 	for _, s := range strings {
 		if s != "" {

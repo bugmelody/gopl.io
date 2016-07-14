@@ -5,6 +5,7 @@
 //!+
 
 // Charcount computes counts of Unicode characters.
+// 调用示例: $ echo '123abcd定的出想啊牌你说的发掘a' | go run main.go
 package main
 
 import (
@@ -18,6 +19,7 @@ import (
 
 func main() {
 	counts := make(map[rune]int)    // counts of Unicode characters
+	// utf8.UTFMax: UTF-8编码的unicode字符最大有多少个字节
 	var utflen [utf8.UTFMax + 1]int // count of lengths of UTF-8 encodings
 	invalid := 0                    // count of invalid UTF-8 characters
 

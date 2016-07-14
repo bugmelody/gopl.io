@@ -25,7 +25,11 @@ func main() {
 	s := []int{0, 1, 2, 3, 4, 5}
 	// Rotate s left by two positions.
 	reverse(s[:2])
+	// => [1 0 2 3 4 5]
+	
 	reverse(s[2:])
+	// => [1 0 5 4 3 2]
+	
 	reverse(s)
 	fmt.Println(s) // "[2 3 4 5 0 1]"
 	//!-slice
@@ -35,6 +39,7 @@ func main() {
 outer:
 	for input.Scan() {
 		var ints []int
+		// strings.Fields(input.Text()) : 用空白符分隔每一行,最后得到一个 []string
 		for _, s := range strings.Fields(input.Text()) {
 			x, err := strconv.ParseInt(s, 10, 64)
 			if err != nil {

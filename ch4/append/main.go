@@ -30,12 +30,14 @@ func appendslice(x []int, y ...int) []int {
 
 //!+append
 func appendInt(x []int, y int) []int {
+	// z 代表了将要返回的 slice, 可能来自于 直接从 x 现有的空间中 slice, 也可能来自于新分配的内存空间
 	var z []int
 	zlen := len(x) + 1
 	if zlen <= cap(x) {
 		// There is room to grow.  Extend the slice.
 		z = x[:zlen]
 	} else {
+		// amortize [ə'mɔ:taɪz] vt. 摊销（等于amortise）；分期偿还
 		// There is insufficient space.  Allocate a new array.
 		// Grow by doubling, for amortized linear complexity.
 		zcap := zlen
