@@ -5,6 +5,7 @@
 //!+
 
 // Issues prints a table of GitHub issues matching the search terms.
+// $ go run ch4/issues/main.go repo:golang/go is:open json decoder
 package main
 
 import (

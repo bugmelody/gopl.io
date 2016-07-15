@@ -28,3 +28,10 @@ func main() {
 }
 
 //!-
+
+/**
+We can suppress this auto-escaping behavior for fields that contain trusted HTML data by
+using the named string type template.HTML instead of string. Similar named types exist for
+trusted JavaScript, CSS, and URLs. The program below demonstrates the principle by using
+two fields with the same value but different types: A is a string and B is a template.HTML.
+ */

@@ -42,6 +42,14 @@ func SearchIssues(terms []string) (*IssuesSearchResult, error) {
 	}
 
 	var result IssuesSearchResult
+
+	/**
+	The earlier examples used json.Unmarshal to decode the entire contents of a byte slice as a
+	single JSON entity. For variety, this example uses the streaming decoder, json.Decoder,
+	which allows several JSON entities to be decoded in sequence from the same stream, although
+	we don’t need that feature here. As you might expect, there is a corresponding streaming
+	encoder called json.Encoder.
+	*/
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		resp.Body.Close()
 		return nil, err

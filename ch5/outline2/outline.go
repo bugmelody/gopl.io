@@ -3,6 +3,8 @@
 
 // See page 133.
 
+// $ ./outline2 http://www.sina.com.cn
+
 // Outline prints the outline of an HTML document tree.
 package main
 
@@ -65,6 +67,30 @@ var depth int
 
 func startElement(n *html.Node) {
 	if n.Type == html.ElementNode {
+		/**
+		书上说明: The * adverb in %*s prints a string padded with a variable number of spaces.
+		The width and the string are provided by the arguments depth*2 and "".
+		*/
+		/**
+		这个行为在 fmt 包说明中有讲
+		Width is specified by an optional decimal number immediately preceding the
+		verb. If absent, the width is whatever is necessary to represent the value.
+		Precision is specified after the (optional) width by a period followed by a
+		decimal number. If no period is present, a default precision is used. A
+		period with no following number specifies a precision of zero. Examples:
+		
+		%f     default width, default precision
+		%9f    width 9, default precision
+		%.2f   default width, precision 2
+		%9.2f  width 9, precision 2
+		%9.f   width 9, precision 0
+		
+		Width and precision are measured in units of Unicode code points, that is,
+		runes. (This differs from C's printf where the units are always measured in
+		bytes.) Either or both of the flags may be replaced with the character '*',
+		causing their values to be obtained from the next operand, which must be of
+		type int.
+		*/
 		fmt.Printf("%*s<%s>\n", depth*2, "", n.Data)
 		depth++
 	}

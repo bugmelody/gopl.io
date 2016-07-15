@@ -4,6 +4,7 @@
 // See page 113.
 
 // Issuesreport prints a report of issues matching the search terms.
+// $ go run ch4/issuesreport/main.go repo:golang/go is:open json decoder
 package main
 
 import (

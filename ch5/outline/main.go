@@ -3,6 +3,12 @@
 
 // See page 123.
 
+/**
+运行
+go build gopl.io/ch5/outline
+./fetch http://godoc.golangtc.com/ | ./outline
+ */
+
 // Outline prints the outline of an HTML document tree.
 package main
 
@@ -34,3 +40,11 @@ func outline(stack []string, n *html.Node) {
 }
 
 //!-
+
+/**
+Note one subtlety: although outline "pushes" an element on stack, there is no corresponding
+pop. When outline calls itself recursively, the callee receives a copy of stack. Although the
+callee may append elements to this slice, modifying its underlying array and perhaps even
+allocating a new array, it doesn’t modify the initial elements that are visible to the caller, so
+when the function returns, the caller’s stack is as it was before the call.
+ */

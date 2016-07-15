@@ -11,6 +11,12 @@ import (
 	"sort"
 )
 
+/**
+The prerequisites are given in the prereqs table below, which is a mapping from
+each course to the list of courses that must be completed before it.
+课程 : 在学习这门课程之前需要完成的其他课程
+ */
+
 //!+table
 // prereqs maps computer science courses to their prerequisites.
 var prereqs = map[string][]string{

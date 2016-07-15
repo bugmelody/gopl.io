@@ -4,6 +4,11 @@
 // See page 115.
 
 // Issueshtml prints an HTML table of issues matching the search terms.
+
+// 执行
+// $ go run ch4/issueshtml/main.go repo:golang/go is:open json decoder
+// $ go run ch4/issueshtml/main.go repo:golang/go commenter:gopherbot json encoder >issues.html
+// $ go run ch4/issueshtml/main.go repo:golang/go 3133 10535 >issues2.html
 package main
 
 import (

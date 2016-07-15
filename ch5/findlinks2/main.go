@@ -55,6 +55,10 @@ func findLinks(url string) ([]string, error) {
 		return nil, err
 	}
 	if resp.StatusCode != http.StatusOK {
+		/* We must ensure that resp.Body is closed so that network resources are properly released even
+		in case of error. Go’s garbage collector recycles unused memory, but do not assume it will
+		release unused operating system resources like open files and network connection s. They
+		should be closed explicitly */
 		resp.Body.Close()
 		return nil, fmt.Errorf("getting %s: %s", url, resp.Status)
 	}

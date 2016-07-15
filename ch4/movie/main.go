@@ -107,3 +107,9 @@ Actors":["Steve McQueen","Jacqueline Bisset"]}]
 ]
 //!-indented
 */
+
+
+/**
+Marshaling uses the Go struct field names as the field names for the JSON objects. Only exported fields
+are marshaled, which is why we chose capitalized names for all the Go field names.
+ */

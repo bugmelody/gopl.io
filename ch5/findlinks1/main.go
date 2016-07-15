@@ -4,6 +4,16 @@
 // See page 122.
 //!+main
 
+/**
+运行说明: cd $GOPATH
+$ go build gopl.io/ch1/fetch
+$ go build gopl.io/ch5/findlinks1
+
+这样生成的可执行文件在 $GOPATH 中,不会对版本控制造成影响
+
+$ ./fetch http://godoc.golangtc.com/ | ./findlinks1
+ */
+
 // Findlinks1 prints the links in an HTML document read from standard input.
 package main
 
