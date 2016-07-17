@@ -14,6 +14,16 @@ import (
 	"path"
 )
 
+/**
+It’s tempting to use a
+second deferred call, to f.Close, to close the local file, but this would be subtly wrong because
+os.Create opens a file for writing, creating it as needed(os.Create是按需创建文件). On many file systems, notably NFS,
+write errors are not reported immediately but may be postponed until the file is closed. Fail-
+ure to check the result of the close operation could cause serious data loss to go unnoticed.
+However, if both io.Copy and f.Close fail, we should prefer to report the error from
+io.Copy since it occurred first and is more likely to tell us the root cause.
+ */
+
 //!+
 // Fetch downloads the URL and returns the
 // name and length of the local file.
@@ -37,6 +47,9 @@ func fetch(url string) (filename string, n int64, err error) {
 	if closeErr := f.Close(); err == nil {
 		err = closeErr
 	}
+
+	// 如果 io.Copy 返回的 err 不是 nil, 则优先返回 io.Copy 的错误
+	// 否则,如果 io.Copy 没有出错, 则将 err 变量设置为 f.Close() 的返回值
 	return local, n, err
 }
 

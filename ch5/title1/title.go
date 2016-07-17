@@ -51,6 +51,10 @@ func title(url string) error {
 	// Check Content-Type is HTML (e.g., "text/html; charset=utf-8").
 	ct := resp.Header.Get("Content-Type")
 	if ct != "text/html" && !strings.HasPrefix(ct, "text/html;") {
+		/**
+		Observe the duplicated resp.Body.Close() call, which ensures that title function closes the
+		network connection on all execution paths, including failures.
+		 */
 		resp.Body.Close()
 		return fmt.Errorf("%s has type %s, not text/html", url, ct)
 	}

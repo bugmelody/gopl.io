@@ -39,6 +39,12 @@ func Extract(url string) ([]string, error) {
 				if a.Key != "href" {
 					continue
 				}
+
+				/**
+				Instead of appending the raw href attribute value to the links slice, this version parses it as a
+				URL relative to the base URL of the document, resp.Request.URL. The resulting link is in
+				absolute form, suitable for use in a call to http.Get.
+				*/
 				link, err := resp.Request.URL.Parse(a.Val)
 				if err != nil {
 					continue // ignore bad URLs
@@ -47,6 +53,7 @@ func Extract(url string) ([]string, error) {
 			}
 		}
 	}
+	// Since Extract needs only the pre function, it passes nil for the post argument.
 	forEachNode(doc, visitNode, nil)
 	return links, nil
 }

@@ -17,6 +17,14 @@ each course to the list of courses that must be completed before it.
 课程 : 在学习这门课程之前需要完成的其他课程
  */
 
+/**
+This kind of problem is known as topological sorting. Conceptually, the prerequisite
+information forms a directed graph with a node for each course and edges from each course to
+the courses that it depends on. The graph is acyclic: there is no path from a course that leads
+back to itself. We can compute a valid sequence using depth-first search through the graph
+with the code below
+ */
+
 //!+table
 // prereqs maps computer science courses to their prerequisites.
 var prereqs = map[string][]string{
