@@ -37,6 +37,14 @@ func Example_two() {
 	x.Add(9)
 	x.Add(42)
 
+	/**
+	In the first case, we print an *IntSet pointer, which does have a String method. In the
+	second case, we call String() on an IntSet var iable; the compiler inserts the implicit & op er-
+	ation, giving us a pointer, which has the String method. But in the third cas e, because the
+	IntSet value does not have a String method, fmt.Println prints the representation of the
+	struc t instead. It’s important not to forget the & operator. Making String a method of
+	IntSet, not *IntSet, might be a good ide a, but this is a case-by-case judgment.
+	*/
 	//!+note
 	fmt.Println(&x)         // "{1 9 42 144}"
 	fmt.Println(x.String()) // "{1 9 42 144}"

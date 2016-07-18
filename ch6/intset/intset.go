@@ -40,7 +40,7 @@ func (s *IntSet) UnionWith(t *IntSet) {
 	/**
 	tword在s的范围内,可以直接用位或
 	否则,tword在s的范围外,使用append达到union的效果
-	 */
+	*/
 	for i, tword := range t.words {
 		if i < len(s.words) {
 			s.words[i] |= tword
@@ -64,6 +64,12 @@ func (s *IntSet) String() string {
 		}
 		for j := 0; j < 64; j++ {
 			if word&(1<<uint(j)) != 0 {
+				/**
+				buf.Len() 返回 buffer 中未读部分的字节数
+				// Len returns the number of bytes of the unread portion of the buffer;
+				// b.Len() == len(b.Bytes()).
+				func (b *Buffer) Len() int { return len(b.buf) - b.off }
+				*/
 				if buf.Len() > len("{") {
 					buf.WriteByte(' ')
 				}
@@ -72,6 +78,12 @@ func (s *IntSet) String() string {
 		}
 	}
 	buf.WriteByte('}')
+
+	/**
+	// String returns the contents of the unread portion of the buffer
+	// as a string.  If the Buffer is a nil pointer, it returns "<nil>".
+	func (b *Buffer) String() string {
+	*/
 	return buf.String()
 }
 
