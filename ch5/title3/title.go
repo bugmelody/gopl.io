@@ -48,8 +48,10 @@ func soleTitle(doc *html.Node) (title string, err error) {
 
 	// Bail out of recursion if we find more than one non-empty title.
 	forEachNode(doc, func(n *html.Node) {
+		// 注意,本函数里用到的title是soleTitle的title命名返回值
 		if n.Type == html.ElementNode && n.Data == "title" &&
 			n.FirstChild != nil {
+			// 如果遇到 title 元素,则设置到 title 变量,但是如果 title 变量之前已经被设置,说明有多个 title 标签
 			if title != "" {
 				panic(bailout{}) // multiple title elements
 			}

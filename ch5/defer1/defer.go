@@ -14,6 +14,7 @@ func main() {
 }
 
 func f(x int) {
+	// 注意,这里的 x+0/x, 其实是 x+(0/x), (0/x) 在 x 不为零的情况下为 0
 	fmt.Printf("f(%d)\n", x+0/x) // panics if x == 0
 	defer fmt.Printf("defer %d\n", x)
 	f(x - 1)

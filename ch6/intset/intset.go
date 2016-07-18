@@ -22,6 +22,7 @@ type IntSet struct {
 // Has reports whether the set contains the non-negative value x.
 func (s *IntSet) Has(x int) bool {
 	word, bit := x/64, uint(x%64)
+	// len 用在 nil slice 上面的时候,返回 0
 	return word < len(s.words) && s.words[word]&(1<<bit) != 0
 }
 
@@ -36,6 +37,10 @@ func (s *IntSet) Add(x int) {
 
 // UnionWith sets s to the union of s and t.
 func (s *IntSet) UnionWith(t *IntSet) {
+	/**
+	tword在s的范围内,可以直接用位或
+	否则,tword在s的范围外,使用append达到union的效果
+	 */
 	for i, tword := range t.words {
 		if i < len(s.words) {
 			s.words[i] |= tword
