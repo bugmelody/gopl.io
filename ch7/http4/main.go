@@ -17,8 +17,12 @@ import (
 
 func main() {
 	db := database{"shoes": 50, "socks": 5}
+	// 相当于 http3a 例子中的 mux.HandleFunc("/list", db.list), 只不过使用的是 DefaultServeMux
 	http.HandleFunc("/list", db.list)
 	http.HandleFunc("/price", db.price)
+	/**
+	http.ListenAndServe 第二个参数如果传 nil, 则 DefaultServeMux 会被使用
+	 */
 	log.Fatal(http.ListenAndServe("localhost:8000", nil))
 }
 

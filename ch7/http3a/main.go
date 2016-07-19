@@ -16,6 +16,10 @@ import (
 func main() {
 	db := database{"shoes": 50, "socks": 5}
 	mux := http.NewServeMux()
+
+	/**
+	可以看看 mux.HandleFunc 函数的源码, 其实就相当于 ch7/http3 中的 mux.Handle("/list", http.HandlerFunc(db.list))
+	 */
 	//!+main
 	mux.HandleFunc("/list", db.list)
 	mux.HandleFunc("/price", db.price)
