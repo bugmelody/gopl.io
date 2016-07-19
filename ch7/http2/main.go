@@ -42,6 +42,11 @@ func (db database) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	default:
 		w.WriteHeader(http.StatusNotFound) // 404
 		fmt.Fprintf(w, "no such page: %s\n", req.URL)
+		/**
+		Equivalently, we could use the http.Error utility function
+		msg := fmt.Sprintf("no such page: %s\n", req.URL)
+		http.Error(w, msg, http.StatusNotFound) // 404
+		*/
 	}
 }
 

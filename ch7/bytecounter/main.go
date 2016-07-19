@@ -3,6 +3,12 @@
 
 // See page 173.
 
+/**
+The Write method of the *ByteCounter type below
+merely counts the bytes written to it before discarding them. (The conversion is required to
+make the types of len(p) and *c match in the += assignment statement.)
+ */
+
 // Bytecounter demonstrates an implementation of io.Writer that counts bytes.
 package main
 
@@ -15,6 +21,7 @@ import (
 type ByteCounter int
 
 func (c *ByteCounter) Write(p []byte) (int, error) {
+	// 注意, 这个类型转换是必须的
 	*c += ByteCounter(len(p)) // convert int to ByteCounter
 	return len(p), nil
 }
