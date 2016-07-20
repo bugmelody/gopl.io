@@ -89,6 +89,7 @@ func parseAndCheck(s string) (eval.Expr, error) {
 //!+plot
 func plot(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
+	// r.Form 是 url.Values 类型
 	expr, err := parseAndCheck(r.Form.Get("expr"))
 	if err != nil {
 		http.Error(w, "bad expr: "+err.Error(), http.StatusBadRequest)

@@ -3,6 +3,9 @@
 
 package eval
 
+// This package exports only the types Expr, Env, Var; clients can use the evaluator
+// without access to the other expression types.
+
 // An Expr is an arithmetic expression.
 type Expr interface {
 	// Eval returns the value of this Expr in the environment env.

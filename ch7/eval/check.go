@@ -8,6 +8,14 @@ import (
 	"strings"
 )
 
+
+/**
+Check’s argument, a set of Vars, accumulates the set of variable names found within the expression. Each of
+these variables must be present in the environment for evaluation to succeed. This set is logically the
+result of the call to Check, but because the method is recursive, it is more convenient for Check to populate
+a set passed as a parameter. The client must provide an empty set in the initial call. 
+ */
+
 //!+Check
 
 func (v Var) Check(vars map[Var]bool) error {

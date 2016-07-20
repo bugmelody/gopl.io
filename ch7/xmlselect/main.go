@@ -54,3 +54,21 @@ func containsAll(x, y []string) bool {
 }
 
 //!-
+
+/**
+Each time the loop in main encounters a StartElement, it pushes the element’s name onto a stack, and for each EndElement it pops the name from the stack. The API guarantees that the sequence of StartElement and EndElement tokens will be properly matched, even in ill-formed documents. Comments are ignored. When xmlselect encounters a CharData, it prints the text only if the stack contains all the elements named by the command-line arguments, in order.
+
+The command below prints the text of any h2 elements appearing beneath two levels of div elements. Its input is the XML specification, itself an XML document.
+
+$ go build gopl.io/ch1/fetch
+$ ./fetch http://www.w3.org/TR/2006/REC-xml11-20060816 |
+    ./xmlselect div div h2
+html body div div h2: 1 Introduction
+html body div div h2: 2 Documents
+html body div div h2: 3 Logical Structures
+html body div div h2: 4 Physical Structures
+html body div div h2: 5 Conformance
+html body div div h2: 6 Notation
+html body div div h2: A References
+html body div div h2: B Definitions for Character Normalization
+ */

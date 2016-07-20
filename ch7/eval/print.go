@@ -12,7 +12,13 @@ import (
 // It does not attempt to remove unnecessary parens.
 func Format(e Expr) string {
 	var buf bytes.Buffer
+	// write 函数在下方定义
 	write(&buf, e)
+	/**
+	String returns the contents of the unread portion of the buffer
+	as a string.  If the Buffer is a nil pointer, it returns "<nil>".
+	func (b *Buffer) String() string {
+	*/
 	return buf.String()
 }
 
@@ -27,6 +33,13 @@ func write(buf *bytes.Buffer, e Expr) {
 	case unary:
 		fmt.Fprintf(buf, "(%c", e.op)
 		write(buf, e.x)
+		/**
+		WriteByte appends the byte c to the buffer, growing the buffer as needed.
+		The returned error is always nil, but is included to match bufio.Writer's
+		WriteByte. If the buffer becomes too large, WriteByte will panic with
+		ErrTooLarge.
+		func (b *Buffer) WriteByte(c byte) error {
+		*/
 		buf.WriteByte(')')
 
 	case binary:

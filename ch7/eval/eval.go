@@ -41,6 +41,10 @@ func (u unary) Eval(env Env) float64 {
 	panic(fmt.Sprintf("unsupported unary operator: %q", u.op))
 }
 
+/**
+We don’t consider divisions by zero or infinity to be errors, since they
+produce a result, albeit non-finite
+ */
 func (b binary) Eval(env Env) float64 {
 	switch b.op {
 	case '+':

@@ -20,7 +20,12 @@ func main() {
 		log.Fatal(err)
 	}
 	for {
+		/**
+		// Accept waits for and returns the next connection to the listener.
+		Accept() (Conn, error)
+		 */
 		conn, err := listener.Accept()
+		
 		if err != nil {
 			log.Print(err) // e.g., connection aborted
 			continue
@@ -30,7 +35,13 @@ func main() {
 }
 
 func handleConn(c net.Conn) {
+	/**
+	// Close closes the connection.
+	// Any blocked Read or Write operations will be unblocked and return errors.
+	Close() error
+	 */
 	defer c.Close()
+	
 	for {
 		_, err := io.WriteString(c, time.Now().Format("15:04:05\n"))
 		if err != nil {
