@@ -36,6 +36,7 @@ func main() {
 			log.Print(err) // e.g., connection aborted
 			continue
 		}
+		// 跟 clock1 相比,不同处是使用了 go 语句
 		go handleConn(conn) // handle connections concurrently
 	}
 	//!-

@@ -4,6 +4,12 @@
 // See page 223.
 
 // Reverb1 is a TCP server that simulates an echo.
+
+/**
+A more interesting echo server might simulate the reverberations of a real echo, with the
+response loud at first ("HELLO!" ), then moderate ("Hello!") after a delay, then quiet
+("hello!") before fading to nothing,
+ */
 package main
 
 import (
@@ -26,6 +32,8 @@ func echo(c net.Conn, shout string, delay time.Duration) {
 
 func handleConn(c net.Conn) {
 	input := bufio.NewScanner(c)
+
+	// 看看 input.Scan 的文档
 	for input.Scan() {
 		echo(c, input.Text(), 1*time.Second)
 	}
