@@ -34,8 +34,8 @@ This version runs really fast—too fast, in fact, since it takes less time than
 when the slice of file names contains only a single element. If there’s no parallelism, how can
 the concurrent version possibly run faster? The answer is that makeThumbnails returns before it
 has finished doing what it was supposed to do. It starts all the goroutines, one per file name, but
-doesn’t wait for them to finish. 
- */
+doesn’t wait for them to finish.
+*/
 func makeThumbnails2(filenames []string) {
 	for _, f := range filenames {
 		go thumbnail.ImageFile(f) // NOTE: ignoring errors
@@ -51,10 +51,12 @@ func makeThumbnails3(filenames []string) {
 	for _, f := range filenames {
 		go func(f string) {
 			thumbnail.ImageFile(f) // NOTE: ignoring errors
+			// struct{}是类型, struct{}{}是literal
 			ch <- struct{}{}
 		}(f)
 	}
 
+	// 实际上是等待len(filenames)次接收
 	// Wait for goroutines to complete.
 	for range filenames {
 		<-ch
@@ -109,6 +111,7 @@ func makeThumbnails5(filenames []string) (thumbfiles []string, err error) {
 	for range filenames {
 		it := <-ch
 		if it.err != nil {
+			// 注意,这里使用了buffered chan,所以提前返回不会有问题,由于有buffer,不会造成发送方阻塞
 			return nil, it.err
 		}
 		thumbfiles = append(thumbfiles, it.thumbfile)
@@ -122,13 +125,21 @@ func makeThumbnails5(filenames []string) (thumbfiles []string, err error) {
 //!+6
 // makeThumbnails6 makes thumbnails for each file received from the channel.
 // It returns the number of bytes occupied by the files it creates.
+// filenames参数: 接收的channel,每个元素代表一个文件名
 func makeThumbnails6(filenames <-chan string) int64 {
 	sizes := make(chan int64)
 	var wg sync.WaitGroup // number of working goroutines
 	for f := range filenames {
+		// increments WaitGroup counter
+		/** Add, which increments the counter, must be called before the worker goroutine
+		starts, not within it; otherwise we would not be sure that the Add happens before
+		the "closer" goroutine calls Wait.
+		*/
 		wg.Add(1)
 		// worker
 		go func(f string) {
+			// decrements the WaitGroup counter,放在defer语句中,确保一定被执行
+			// We use defer to ensure that the counter is decremented even in the error case
 			defer wg.Done()
 			thumb, err := thumbnail.ImageFile(f)
 			if err != nil {
@@ -143,6 +154,7 @@ func makeThumbnails6(filenames <-chan string) int64 {
 	// closer
 	go func() {
 		wg.Wait()
+		// 如果不close,主线程的的range就根本停不下来
 		close(sizes)
 	}()
 
@@ -150,7 +162,21 @@ func makeThumbnails6(filenames <-chan string) int64 {
 	for size := range sizes {
 		total += size
 	}
+
+	/**
+	Observe how we create a closer goroutine that
+	waits for the workers to finish before closing the sizes channel. These two operations, wait
+	and close, must be concurrent with the loop over sizes. Consider the alternatives: if the wait
+	operation were placed in the main goroutine before the loop, it would never end(chan中有数据却没人接收), and if placed
+	after the loop, it would be unreachable since with nothing closing the channel, the loop would
+	never terminate(range loop 要停止的条件是chan被close并且已发送的数据被消费完).
+
+	*/
+
 	return total
 }
+
+// The structure of the code above is a common and idiomatic pattern for looping
+// in parallel when we don’t know the number of iterations.
 
 //!-6
