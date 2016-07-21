@@ -29,8 +29,11 @@ func main() {
 		log.Fatal(err)
 	}
 	defer conn.Close()
+	// 另起一个goroutine,用于接收server的信息到stdout
 	// 如果 main goroutine 中的 mustCopy 遇到 EOF 返回, 另一个 goroutine 中仍然在运行, 造成程序退出而第二个 goroutine 被强制中断
 	go mustCopy(os.Stdout, conn)
+	
+	// 接收stdin的信息发送到server
 	mustCopy(conn, os.Stdin)
 }
 

@@ -44,6 +44,7 @@ func Image(src image.Image) image.Image {
 	return dst
 }
 
+// ImageStream 函数被 ImageFile2 函数所调用
 // ImageStream reads an image from r and
 // writes a thumbnail-size version of it to w.
 func ImageStream(w io.Writer, r io.Reader) error {
@@ -55,6 +56,7 @@ func ImageStream(w io.Writer, r io.Reader) error {
 	return jpeg.Encode(w, dst, nil)
 }
 
+// ImageFile2 函数被 ImageFile 函数所调用
 // ImageFile2 reads an image from infile and writes
 // a thumbnail-size version of it to outfile.
 func ImageFile2(outfile, infile string) (err error) {
@@ -80,7 +82,13 @@ func ImageFile2(outfile, infile string) (err error) {
 // a thumbnail-size version of it in the same directory.
 // It returns the generated file name, e.g. "foo.thumb.jpeg".
 func ImageFile(infile string) (string, error) {
+	// filepath.Ext 用于获取扩展名, 返回的字符串以点开头,比如 ".jpg", ".JPEG"
 	ext := filepath.Ext(infile) // e.g., ".jpg", ".JPEG"
+
+	/**	TrimSuffix returns s without the provided trailing suffix string.
+			If s doesn't end with suffix, s is returned unchanged.
+	func TrimSuffix(s, suffix string) string { */
+	
 	outfile := strings.TrimSuffix(infile, ext) + ".thumb" + ext
 	return outfile, ImageFile2(outfile, infile)
 }

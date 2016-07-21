@@ -6,7 +6,10 @@
 // Pipeline1 demonstrates an infinite 3-stage pipeline.
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 //!+
 func main() {
@@ -17,6 +20,7 @@ func main() {
 	go func() {
 		for x := 0; ; x++ {
 			naturals <- x
+			time.Sleep(time.Second)
 		}
 	}()
 

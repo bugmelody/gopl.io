@@ -28,6 +28,14 @@ func makeThumbnails(filenames []string) {
 
 //!+2
 // NOTE: incorrect!
+//这是错误的设计,因为用go了之后,直接返回了,最后可能还在执行图像处理,主线程却已经退出了
+/**
+This version runs really fast—too fast, in fact, since it takes less time than the original, even
+when the slice of file names contains only a single element. If there’s no parallelism, how can
+the concurrent version possibly run faster? The answer is that makeThumbnails returns before it
+has finished doing what it was supposed to do. It starts all the goroutines, one per file name, but
+doesn’t wait for them to finish. 
+ */
 func makeThumbnails2(filenames []string) {
 	for _, f := range filenames {
 		go thumbnail.ImageFile(f) // NOTE: ignoring errors

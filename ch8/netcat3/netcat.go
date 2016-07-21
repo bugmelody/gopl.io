@@ -23,8 +23,11 @@ func main() {
 	go func() {
 		io.Copy(os.Stdout, conn) // NOTE: ignoring errors
 		log.Println("done")
+		// 发送数据到 done 这个 chan 以便通知 main goroutine
 		done <- struct{}{} // signal the main goroutine
 	}()
+	
+	// 将 os.Stdin 的数据发送到 server
 	mustCopy(conn, os.Stdin)
 	conn.Close()
 	<-done // wait for background goroutine to finish

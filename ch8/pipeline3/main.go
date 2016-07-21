@@ -18,6 +18,7 @@ func counter(out chan<- int) {
 }
 
 func squarer(out chan<- int, in <-chan int) {
+	// for ... range chan 循环停止的唯一条件是 chan 被 close, 并且 chan 中的已发送元素被消耗完
 	for v := range in {
 		out <- v * v
 	}
@@ -25,6 +26,7 @@ func squarer(out chan<- int, in <-chan int) {
 }
 
 func printer(in <-chan int) {
+	// for ... range chan 循环停止的唯一条件是 chan 被 close, 并且 chan 中的已发送元素被消耗完
 	for v := range in {
 		fmt.Println(v)
 	}
@@ -40,3 +42,7 @@ func main() {
 }
 
 //!-
+
+/**
+The call counter(naturals) implicitly converts naturals, a value of type chan int, to the type of the parameter, chan<- int. The printer(squares) call does a similar implicit conversion to <-chan int. Conversions from bidirectional to unidirectional channel types are permitted in any assignment. There is no going back, however: once you have a value of a unidirectional type such as chan<- int, there is no way to obtain from it a value of type chan int that refers to the same channel data structure.
+*/
