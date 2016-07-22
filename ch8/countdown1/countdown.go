@@ -27,3 +27,9 @@ func main() {
 func launch() {
 	fmt.Println("Lift off!")
 }
+
+/*
+The time.Tick function returns
+a channel on which it sends events periodically, acting like a metronome. The value of each
+event is a timestamp, but it is rarely as interesting as the fact of its delivery.
+ */

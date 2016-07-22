@@ -24,8 +24,10 @@ var tokens = make(chan struct{}, 20)
 
 func crawl(url string) []string {
 	fmt.Println(url)
+	// tokens空间满了后此send操作会阻塞,只有在tokens中有空间的时候才不阻塞; 也就是说最大只能同时有20个send操作
 	tokens <- struct{}{} // acquire a token
 	list, err := links.Extract(url)
+	// 释放空间
 	<-tokens // release the token
 
 	if err != nil {
@@ -62,3 +64,10 @@ func main() {
 }
 
 //!-
+
+/**
+In this version, the counter n keeps track of the number of sends to the worklist that are yet to
+occur. Each time we know that an item needs to be sent to the worklist, we increment n, once
+before we send the initial command-line arguments, and again each time we start a crawler
+goroutine. The main loop terminates when n falls to zero, since there is no more work to be done.
+ */

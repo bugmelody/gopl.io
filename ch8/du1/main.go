@@ -16,9 +16,19 @@ import (
 	"path/filepath"
 )
 
+/**
+ The ioutil.ReadDir function returns a slice of os.FileInfo—the same information that a call to os.Stat returns for a single file. For each subdirectory, walkDir recursively calls itself, and for each file, walkDir sends a message on the fileSizes channel. The message is the size of the file in bytes.
+
+The main function, shown below, uses two goroutines. The background goroutine calls walkDir for each directory specified on the command line and finally closes the fileSizes channel. The main goroutine computes the sum of the file sizes it receives from the channel and finally prints the total. 
+ */
+
 func main() {
 	// Determine the initial directories.
 	flag.Parse()
+	/**
+	// Args returns the non-flag command-line arguments.
+	func Args() []string { return CommandLine.args }
+	*/
 	roots := flag.Args()
 	if len(roots) == 0 {
 		roots = []string{"."}
@@ -55,9 +65,11 @@ func printDiskUsage(nfiles, nbytes int64) {
 func walkDir(dir string, fileSizes chan<- int64) {
 	for _, entry := range dirents(dir) {
 		if entry.IsDir() {
+			// 如果是目录
 			subdir := filepath.Join(dir, entry.Name())
 			walkDir(subdir, fileSizes)
 		} else {
+			// 如果是文件,发送文件大小到 fileSizes
 			fileSizes <- entry.Size()
 		}
 	}

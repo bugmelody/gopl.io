@@ -10,6 +10,13 @@ package main
 // It uses a concurrency-limiting counting semaphore
 // to avoid opening too many files at once.
 
+/**
+du3
+creates a new goroutine for each call to walkDir. It uses a sync.WaitGroup (§8.5) to
+count the number of calls to walkDir that are still active, and a closer goroutine to close the
+fileSizes channel when the counter drops to zero.
+*/
+
 import (
 	"flag"
 	"fmt"
@@ -41,6 +48,7 @@ func main() {
 	var n sync.WaitGroup
 	for _, root := range roots {
 		n.Add(1)
+		// 注意,这里传递了一个指向sync.WaitGroup的指针
 		go walkDir(root, &n, fileSizes)
 	}
 	go func() {
@@ -65,6 +73,7 @@ loop:
 			nfiles++
 			nbytes += size
 		case <-tick:
+			// 间歇性的打印汇总信息
 			printDiskUsage(nfiles, nbytes)
 		}
 	}
@@ -84,11 +93,15 @@ func printDiskUsage(nfiles, nbytes int64) {
 // and sends the size of each found file on fileSizes.
 //!+walkDir
 func walkDir(dir string, n *sync.WaitGroup, fileSizes chan<- int64) {
+	/** // Done decrements the WaitGroup counter.
+	func (wg *WaitGroup) Done() { */
+
 	defer n.Done()
 	for _, entry := range dirents(dir) {
 		if entry.IsDir() {
 			n.Add(1)
 			subdir := filepath.Join(dir, entry.Name())
+			// 注意, n 是一个指向 sync.WaitGroup 的指针
 			go walkDir(subdir, n, fileSizes)
 		} else {
 			fileSizes <- entry.Size()
@@ -98,11 +111,18 @@ func walkDir(dir string, n *sync.WaitGroup, fileSizes chan<- int64) {
 
 //!-walkDir
 
+/**
+Since this program creates many thousands of goroutines at its peak, we have to change
+dirents to use a counting semaphore to prevent it from opening too many files at once
+*/
+
 //!+sema
 // sema is a counting semaphore for limiting concurrency in dirents.
+// 限制最多20个并发
 var sema = make(chan struct{}, 20)
 
 // dirents returns the entries of directory dir.
+// 函数内部通过 semaphore 保证最多20个对dirents函数的并发调用
 func dirents(dir string) []os.FileInfo {
 	sema <- struct{}{}        // acquire token
 	defer func() { <-sema }() // release token

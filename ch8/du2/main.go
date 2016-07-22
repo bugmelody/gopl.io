@@ -43,10 +43,24 @@ func main() {
 
 	//!+
 	// Print the results periodically.
+
+	/**
+	tick变量现在是zero value
+	下面的if,如果执行了,就不是zero value
+
+	而是否时zero value,对 select就有很重要的意义
+
+	The zero value for a channel is nil. Perhaps surprisingly, nil channels are sometimes useful.
+	Because send and receive operations on a nil channel block forever, a case in a select statement
+	whose channel is nil is never selected. This lets us use nil to enable or disable cases that correspond
+	to features like handling timeouts or cancellation, responding to other input events, or emitting output.
+	*/
 	var tick <-chan time.Time
 	if *verbose {
+		// 1秒(s)=1000毫秒(ms)
 		tick = time.Tick(500 * time.Millisecond)
 	}
+	// nfiles: 总文件数, nbytes: 总字节数
 	var nfiles, nbytes int64
 loop:
 	for {
@@ -58,6 +72,7 @@ loop:
 			nfiles++
 			nbytes += size
 		case <-tick:
+			// 注意如果 tick 是 nil, 这个 case 永远不会被执行
 			printDiskUsage(nfiles, nbytes)
 		}
 	}
