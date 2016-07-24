@@ -14,9 +14,11 @@ func TestBank(t *testing.T) {
 	// Deposit [1..1000] concurrently.
 	var n sync.WaitGroup
 	for i := 1; i <= 1000; i++ {
+		// 在启动goroutine之前add
 		n.Add(1)
 		go func(amount int) {
 			bank.Deposit(amount)
+			// 在goroutine结束时done
 			n.Done()
 		}(i)
 	}
