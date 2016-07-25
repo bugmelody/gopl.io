@@ -46,6 +46,7 @@ func incomingURLs() <-chan string {
 		} {
 			ch <- url
 		}
+		// 数据发送完毕,需要关闭掉ch
 		close(ch)
 	}()
 	return ch
@@ -70,6 +71,9 @@ func Sequential(t *testing.T, m M) {
 			log.Print(err)
 			continue
 		}
+		/**
+		value.([]byte) 这是一个 type assertion,返回 []byte 类型,如果 assertion 失败,会 panic
+		 */
 		fmt.Printf("%s, %s, %d bytes\n",
 			url, time.Since(start), len(value.([]byte)))
 	}
@@ -86,8 +90,10 @@ func Concurrent(t *testing.T, m M) {
 	//!+conc
 	var n sync.WaitGroup
 	for url := range incomingURLs() {
+		// 在goroutine启动之前进行add
 		n.Add(1)
 		go func(url string) {
+			// 在goroutine结束之前进行Done
 			defer n.Done()
 			start := time.Now()
 			value, err := m.Get(url)
@@ -99,6 +105,7 @@ func Concurrent(t *testing.T, m M) {
 				url, time.Since(start), len(value.([]byte)))
 		}(url)
 	}
+	// 等待所有WaitGroup完成
 	n.Wait()
 	//!-conc
 }
