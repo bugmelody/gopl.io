@@ -9,6 +9,10 @@
 // memoization of a function of type Func.
 package memo
 
+/**
+A Memo instance holds the function f to memoize, of type Func, and the cache, which is a mapping from strings to results. Each result is simply the pair of results returned by a call to f—a value and an error. We’ll show several variations of Memo as the design progresses, but all will share these basic aspects.
+*/
+
 // A Memo caches the results of calling a Func.
 type Memo struct {
 	f     Func
