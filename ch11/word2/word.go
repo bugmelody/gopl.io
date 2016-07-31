@@ -14,6 +14,9 @@ import "unicode"
 func IsPalindrome(s string) bool {
 	var letters []rune
 	for _, r := range s {
+		/**
+		// IsLetter reports whether the rune is a letter (category L).
+		func IsLetter(r rune) bool { */
 		if unicode.IsLetter(r) {
 			letters = append(letters, unicode.ToLower(r))
 		}

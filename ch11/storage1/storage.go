@@ -3,6 +3,7 @@
 
 // See page 311.
 
+// hypothetical [,haɪpə'θetɪk(ə)l] adj. 假设的；爱猜想的
 // Package storage is part of a hypothetical cloud storage server.
 //!+main
 package storage
