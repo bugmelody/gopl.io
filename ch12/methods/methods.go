@@ -27,3 +27,12 @@ func Print(x interface{}) {
 }
 
 //!-print
+
+/**
+Both reflect.Type and reflect.Value have a method called Method. Each t.Method(i)
+call returns an instance of reflect.Method, a struct type that describes the name and type of
+a single method. Each v.Method(i) call returns a reflect.Value representing a method
+value (§6.4), that is, a method bound to its receiver. Using the reflect.Value.Call method
+(which we don’t have space to show here), it’s possible to call Values of kind Func like this one,
+but this program needs only its Type.
+ */
