@@ -1,0 +1,79 @@
+Go Concurrency Patterns: Timing out, moving on
+[[[1-over]]] 2016-12-23 15:13:23
+
+Concurrent programming has its own idioms. A good example is timeouts.
+
+Although Go's channels do not support them directly, they are easy to implement.
+
+Say we want to receive from the channel ch, but want to wait at most one second for the value to arrive. We
+would start by creating a signalling channel and launching a goroutine that sleeps before sending on the channel:
+
+timeout := make(chan bool, 1) // 缓冲区长度为1
+
+// timeout goroutine
+go func() {
+    time.Sleep(1 * time.Second)
+    timeout <- true // 因为 timeout 这个 channel 是有缓冲的,因此这里不会阻塞,函数正常退出
+}()
+
+
+We can then use a select statement to receive from either ch or timeout.
+If nothing arrives on ch after one second, the timeout case is selected and the attempt to read from ch is abandoned.
+
+select {
+case <-ch:
+    // a read from ch has occurred
+case <-timeout:
+    // the read from ch has timed out
+}
+上面的两个 case 中最终只会有一个发生.
+
+
+The timeout channel is buffered with space for 1 value, allowing the timeout goroutine to send to the channel and then
+exit. The goroutine(指: timeout goroutine) doesn't know (or care) whether the value is received. This means the
+goroutine(指: timeout goroutine) won't hang around forever if the ch receive happens before the timeout is reached. The
+timeout channel will eventually be deallocated by the garbage collector.
+(假如说在一秒内从ch中收到了数据, select语句执行完毕,开始执行select之后的语句.1秒后timeout goroutine发送了数据,此时timeout这个channel中还有数据,之后被垃圾回收)
+                                               如果是非buffer的channel,此时是发送不动的,因为没有接收方
+
+(In this example we used time.Sleep to demonstrate the mechanics of goroutines and channels. In real programs you
+should use ` time.After`, a function that returns a channel and sends on that channel after the specified duration.)
+
+Let's look at another variation of this pattern. In this example we have a program that reads from multiple replicated
+databases simultaneously. The program needs only one of the answers, and it should accept the answer that arrives first.
+
+The function Query takes a slice of database connections and a query string. It queries each of the databases in parallel
+and returns the first response it receives:
+
+func Query(conns []Conn, query string) Result {
+    ch := make(chan Result, 1) // 这里必须要设置一个缓冲长度,注意 chan 的类型为 Result
+    for _, conn := range conns {
+        go func(c Conn) {
+            select {
+            case ch <- c.DoQuery(query): // non-blocking send
+            default:
+            }
+        }(conn)
+    }
+    // 在下面的接收语句之前,甚至在上面的for循环过程中,可能某个goroutine中的 c.DoQuery 就已经执行完毕发送 Result 到 ch.
+    // 如果ch是无缓冲的channel,,那个  ch <- c.DoQuery(query) 操作会阻塞, 因为没有接收方.
+    return <-ch // 从 ch 中接收数据
+}
+
+In this example, the closure does a non-blocking send, which it achieves by using the send operation in select statement
+with a default case. If the send cannot go through immediately the default case will be selected. Making the send
+non-blocking guarantees that none of the goroutines launched in the loop will hang around.
+
+However, if the result arrives before the main function has made it to the receive, the send could fail since no one is ready.
+
+textbook example: 教科书范例
+This problem is a textbook example of what is known as a race condition, but the fix is trivial. We just make sure to
+buffer the channel ch (by adding the buffer length as the second argument to make), guaranteeing that the first send
+has a place to put the value. This ensures the send will always succeed, and the first value to arrive will be
+retrieved regardless of the order of execution.
+
+
+
+These two examples demonstrate the simplicity with which Go can express complex interactions between goroutines.
+
+By Andrew Gerrand

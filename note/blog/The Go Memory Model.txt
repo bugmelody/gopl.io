@@ -1,0 +1,426 @@
+The Go Memory Model
+[[[1-over]]] 2016-12-24 19:13:23
+Version of May 31, 2014
+
+Introduction
+
+The Go memory model specifies the conditions under which reads of a variable in one goroutine can be guaranteed
+to observe values produced by writes to the same variable in a different goroutine.
+
+
+Advice
+
+Programs that modify data being simultaneously accessed by multiple goroutines must serialize such access.
+
+To serialize access, protect the data with channel operations or other synchronization primitives such as those in the sync and sync/atomic packages.
+
+If you must read the rest of this document to understand the behavior of your program, you are being too clever.
+
+Don't be clever.
+
+
+Happens Before
+
+
+perceive [pə'siːv] vt. 察觉，感觉；理解；认知 vi. 感到，感知；认识到
+
+Within a single goroutine, reads and writes must behave as if they executed in the order specified by the
+program. That is, compilers and processors may reorder the reads and writes executed within a single goroutine
+only when the reordering does not change the behavior within that goroutine as defined by the language
+specification. Because of this reordering, the execution order observed by one goroutine may differ from the
+order perceived by another. For example, if one goroutine executes a = 1; b = 2;, another might observe the
+updated value of b before the updated value of a.
+
+To specify the requirements of reads and writes, we define happens before, a partial order on the execution of
+memory operations in a Go program. If event e1 happens before event e2, then we say that e2 happens after e1. Also, if
+e1 does not happen before e2 and does not happen after e2, then we say that e1 and e2 happen concurrently.
+
+Within a single goroutine, the happens-before order is the order expressed by the program.
+
+A read r of a variable v is allowed to observe a write w to v if both of the following hold:
+
+    r does not happen before w.
+    There is no other write w' to v that happens after w but before r.
+
+To guarantee that a read r of a variable v observes a particular write w to v, ensure that w is the only write r is
+allowed to observe. That is, r is guaranteed to observe w if both of the following hold:
+
+    w happens before r.
+    Any other write to the shared variable v either happens before w or after r.
+
+This pair of conditions is stronger than the first pair; it requires that there are no other writes happening concurrently with w or r.
+
+Within a single goroutine, there is no concurrency, so the two definitions are equivalent: a read r observes the value written by the
+most recent write w to v. When multiple goroutines access a shared variable v, they must use synchronization events to establish
+happens-before conditions that ensure reads observe the desired writes.
+
+The initialization of variable v with the zero value for v's type behaves as a write in the memory model.
+
+Reads and writes of values larger than a single machine word behave as multiple machine-word-sized operations in an unspecified order.
+什么是 single machine word ?
+机器字长也就是运算器进行定点数运算的字长，通常也是CPU内部数据通路的宽度。即字长越长，数的表示范围也越大，精度也越高。机器的字长也会影响机器的运算速度。倘若CPU字长较短，又要运算位数较多的数据，那么需要经过两次或多次的运算才能完成，这样势必影响整机的运行速度。
+机器字长与主存储器字长通常是相同的，但也可以不同。不同的情况下，一般是主存储器字长小于机器字长，例如机器字长是32位，主存储器字长可以是32位，也可以是16位，当然，两者都会影响CPU的工作效率。
+ 不同的计算机系统的字长是不同的，常见的有8位、16位、32位、64位等，字长越长，计算机一次处理的信息位就越多，精度就越高，字长是计算机性能的一个重要指标。目前主流微机都是32位机或64位机。一个字节是8位，除一下就可以了。 
+  一个字节是8位，如果你的电脑是32位的话，一个机器字是由4个字节组成,如果你的电脑是64位的话，一个机器字是由8个字节组成，字节是Byte或byte，用B或b表示，所以一个机器是由4b或8b组成。 
+
+==============================================================
+==============================================================
+==============================================================
+ 译注(Ants Arks)：
+a 不在 b 之前，并不意味着 a 就在 b 之后，它们可以并发。这样的话，第一种说法， 即对于两个并发的Go程来说，一个Go程能否读到另一个Go程写入的数据，可能有，也可能没有。
+第二种说法，由于 r 发生在 w 之后，r 之前并没有其它的 w'，也没有 w" 和 r 并列，因此 r 读到的值必然是 w 写入的值。下面结合图形进行说明，其中 r 为 read，w 为 write，它们都对值进行操作.
+
+单Go程的情形：
+-- w0 ---- r1 -- w1 ---- w2 ----  r2 ---- r3 ------>
+
+这里不仅是个偏序关系，还是一个良序关系：所有 r/w 的先后顺序都是可比较的。
+
+双Go程的情形：
+-- w0 -- r1 -- r2 ---- w3 ----  w4 ---- r5 -------->
+-- w1 ----- w2 -- r3 ----  r4 ---- w5 -------->
+
+单Go程上的事件都有先后顺序；而对于两条Go程，情况又有所不同。即便在时间上 r1 先于 w2 发生，
+但由于每条Go程的执行时长都像皮筋一样伸缩不定，因此二者在逻辑上并无先后次序。换言之，即二者并发。
+对于并发的 r/w，r3 读取的结果可能是前面的 w2，也可能是上面的 w3，甚至 w4 的值；
+而 r5 读取的结果，可能是 w4 的值，也能是 w1、w2、w5 的值，但不可能是 w3 的值。
+
+
+双Go程交叉同步的情形：
+-- r0 -- r1 ---|------ r2 ------------|-- w5 ------>
+-- w1 --- w2 --|-- r3 ---- r4 -- w4 --|------->
+
+现在上面添加了两个同步点，即 | 处。这样的话，r3 就是后于 r1 ，先于 w5 发生的。
+r2 之前的写入为 w2，但与其并发的有 w4，因此 r2 的值是不确定的：可以是 w2，也可以是 w4。
+而 r4 之前的写入的是 w2，与它并发的并没有写入，因此 r4 读取的值为 w2。
+
+到这里，Go程间的关系就很清楚了。若不加同步控制，那么所有的Go程都是“平行”并发的。换句话说， 若不进行同步，那么 main 函数以外的Go程都是无意义
+的，因为这样可以认为 main 跟它们没有关系。 只有加上同步控制，例如锁或信道，Go程间才有了相同的“节点”，在它们的两边也就有了执行的先后顺序， 不过
+两个“节点”之间的部分，同样还是可以自由伸缩，没有先后顺序的。如此推广，多条Go程的同步就成了有向的网。
+==============================================================
+==============================================================
+==============================================================
+
+Synchronization
+
+Initialization
+
+Program initialization runs in a single goroutine, but that goroutine may create other goroutines, which run concurrently.
+
+If a package p imports package q, the completion of q's init functions happens before the start of any of p's.
+
+The start of the function main.main happens after all init functions have finished.
+
+
+==============================================================
+==============================================================
+==============================================================
+Goroutine creation
+
+The go statement that starts a new goroutine happens before the goroutine's execution begins.
+这句话怎么理解?
+go statement 会启动一个对应的 goroutine. 上面这句话是说, 'go statement' 一定 happens before 'goroutine执行'.
+
+For example, in this program:
+
+var a string
+
+func f() {
+	print(a)
+}
+
+func hello() {
+	a = "hello, world"
+	// 'go f()' 这个 'go statement' 一定 happens before 'goroutine执行'
+	// 也就是说, f 中的 print 一定 happens after 'go f()' 的执行.
+	go f()
+}
+
+calling hello will print "hello, world" at some point in the future (perhaps after hello has returned).
+
+
+==============================================================
+==============================================================
+==============================================================
+Goroutine destruction
+
+The exit of a goroutine is not guaranteed to happen before any event in the program. For example, in this program:
+
+var a string
+
+func hello() {
+	go func() { a = "hello" }()
+	print(a)
+}
+
+aggressive [ə'gresɪv] adj. 侵略性的；好斗的；有进取心的；有闯劲的
+the assignment to a is not followed by any synchronization event, so it is not guaranteed to be observed by any other
+goroutine. In fact, an aggressive compiler might delete the entire go statement.
+
+If the effects of a goroutine must be observed by another goroutine, use a synchronization mechanism such as a lock or
+channel communication to establish a relative ordering.
+
+==============================================================
+==============================================================
+==============================================================
+Channel communication
+
+Channel communication is the main method of synchronization between goroutines. Each send on a particular channel is matched to a corresponding receive from that channel, usually in a different goroutine.
+
+A send on a channel happens before the corresponding receive from that channel completes.
+
+This program:
+
+var c = make(chan int, 10)
+var a string
+
+func f() {
+	a = "hello, world"
+	c <- 0
+}
+
+func main() {
+	go f()
+	<-c
+	print(a)
+}
+
+is guaranteed to print "hello, world". The write to a happens before the send on c, which
+happens before the corresponding receive on c completes, which happens before the print.
+
+The closing of a channel happens before a receive that returns a zero value because the channel is closed.
+In the previous example, replacing c <- 0 with close(c) yields a program with the same guaranteed behavior.
+(qc注: 接收操作 <-c 会阻塞,直到收到值或者channel已经被close)
+
+A receive from an unbuffered channel happens before the send on that channel completes.
+怎么理解上面这句话???
+
+This program (as above, but with the send and receive statements swapped and using an unbuffered channel):
+
+var c = make(chan int)
+var a string
+
+func f() {
+	a = "hello, world"
+	<-c // 接收
+}
+
+func main() {
+	go f()
+	c <- 0 // 发送
+	print(a)
+}
+
+is also guaranteed to print "hello, world". The write to a happens before the receive on c, which happens
+before the corresponding send on c completes, which happens before the print.
+
+If the channel were buffered (e.g., c = make(chan int, 1)) then the program would not be guaranteed to
+print "hello, world". (It might print the empty string, crash, or do something else.)
+
+The kth receive on a channel with capacity C happens before the k+Cth send from that channel completes.
+怎么理解上面这句话??
+
+This rule generalizes the previous rule to buffered channels. It allows a counting semaphore to be modeled
+by a buffered channel: the number of items in the channel corresponds to the number of active uses, the
+capacity of the channel corresponds to the maximum number of simultaneous uses, sending an item acquires
+the semaphore, and receiving an item releases the semaphore. This is a common idiom for limiting concurrency.
+
+This program starts a goroutine for every entry in the work list, but the goroutines coordinate using the limit
+channel to ensure that at most three are running work functions at a time.
+
+var limit = make(chan int, 3)
+
+func main() {
+	// work 代表了一批要做的工作,比如是一个func的slice
+	for _, w := range work {
+		go func(w func()) {
+			limit <- 1
+			w()
+			<-limit
+		}(w)
+	}
+	select{} // 空的 select 是什么意思???
+}
+
+Locks
+
+The sync package implements two lock data types, sync.Mutex and sync.RWMutex.
+
+[ 互斥锁 mutex 是独占型，只能 lock 一次， unlock 一次，然后才能继续 lock ,否则阻塞。
+读写互斥锁 reader-writer mutex 是所有的 reader 共享一把锁或是一个 writer 独占一个锁， 如果一个 reader lock 到锁了， 其他的 reader 还可以 lock, 但是 writer 不能 lock 。 ]
+
+For any sync.Mutex or sync.RWMutex variable l and n < m, call n of l.Unlock() happens before call m of l.Lock() returns.
+[ 对于一个 mutex 来说，lock 一下，第二次 lock 会阻塞，只有 unlock 一下才可以继续 lock，就是这个意思。然而 unlock 一个没有 lock 的 mutex 会怎么样呢？error ! ]
+
+This program:
+
+var l sync.Mutex
+var a string
+
+func f() {
+	a = "hello, world"
+	l.Unlock()
+}
+
+func main() {
+	l.Lock()
+	go f()
+	l.Lock()
+	print(a)
+}
+
+is guaranteed to print "hello, world". The first call to l.Unlock() (in f) happens before the second call
+to l.Lock() (in main) returns, which happens before the print.
+
+For any call to l.RLock on a sync.RWMutex variable l, there is an n such that the l.RLock happens (returns) after
+call n to l.Unlock and the matching l.RUnlock happens before call n+1 to l.Lock.       对于 sync.RWMutex 类型的变
+量 mutex 的每一次 mutex.RLock 调用，如果是在第 n 次 mutex.Unlock 调用了之后调用的 mutex.RLock ，那
+么 mutex.Lock 的第 n+1 次调用就在 mutex.RUnlock 之后发生。[ 有点绕，不过大意貌似是说， 如果在 writer
+锁 unlock 之后调用了多次 reader lock， 那么下一次获取 writer 锁要在前面的所有 reader unlock 之后， O__O"… ]
+==============================================================
+==============================================================
+==============================================================
+Once
+
+The sync package provides a safe mechanism for initialization in the presence of multiple goroutines through
+the use of the Once type. Multiple threads can execute once.Do(f) for a particular f, but only one will
+run f(), and the other calls block until f() has returned.
+
+A single call of f() from once.Do(f) happens (returns) before any call of once.Do(f) returns.
+
+In this program:
+
+package main
+import "sync"
+import (
+	"fmt"
+	"time"
+)
+
+var a string
+var once sync.Once
+
+func setup() {
+	a = "hello, world"
+	fmt.Println("---setup")
+}
+
+func doprint() {
+	once.Do(setup)
+	fmt.Println(a)
+}
+
+func twoprint() {
+	go doprint()
+	go doprint()
+}
+
+func main() {
+	twoprint()
+	time.Sleep(5 * time.Second)
+}
+
+calling twoprint causes "hello, world" to be printed twice. The first call to doprint runs setup once.
+doprint 会被调用两次,打印两次a的值. 但是 setup只会被调用一次,在第一次调用doprint会运行setup一次.
+
+
+Incorrect synchronization
+
+Note that a read r may(可能) observe the value written by a write w that happens concurrently with r. Even if this occurs, it
+does not imply that reads happening after r will observe writes that happened before w.
+
+In this program:
+
+var a, b int
+
+func f() {
+	a = 1
+	b = 2
+}
+
+func g() {
+	print(b)
+	print(a)
+}
+
+func main() {
+	go f()
+	g()
+}
+
+it can happen that g prints 2 and then 0.
+
+This fact invalidates a few common idioms.
+
+Double-checked locking is an attempt to avoid the overhead of synchronization.
+二次检查加锁 (double-checked locking) 是一种为了避免同步带来的开销而尝试的举措.
+
+For example, the twoprint program might be incorrectly written as:
+
+var a string
+var done bool
+
+func setup() {
+	a = "hello, world"
+	done = true
+}
+
+func doprint() {
+	if !done {
+		once.Do(setup)
+	}
+	print(a)
+}
+
+func twoprint() {
+	go doprint()
+	go doprint()
+}
+
+but there is no guarantee that, in doprint, observing the write to done implies observing the write to a. This
+version can (incorrectly) print an empty string instead of "hello, world".
+
+Another incorrect idiom is busy waiting for a value, as in:
+
+var a string
+var done bool
+
+func setup() {
+	a = "hello, world"
+	done = true
+}
+
+func main() {
+	go setup()
+	for !done {
+	}
+	print(a)
+}
+
+As before, there is no guarantee that, in main, observing the write to done implies observing the write to a, so this
+program could print an empty string too. Worse, there is no guarantee that the write to done will ever be observed
+by main, since there are no synchronization events between the two threads. The loop in main is not guaranteed to finish.
+
+There are subtler variants on this theme, such as this program.
+
+type T struct {
+	msg string
+}
+
+var g *T
+
+func setup() {
+	t := new(T)
+	t.msg = "hello, world"
+	g = t
+}
+
+func main() {
+	go setup()
+	for g == nil {
+	}
+	print(g.msg)
+}
+
+Even if main observes g != nil and exits its loop, there is no guarantee that it will observe the initialized value for g.msg.
+
+In all these examples, the solution is the same: use explicit synchronization. 

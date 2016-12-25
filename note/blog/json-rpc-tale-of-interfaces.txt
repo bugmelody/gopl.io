@@ -1,0 +1,50 @@
+http://127.0.0.1:6060/blog/json-rpc-tale-of-interfaces
+27 April 2010
+
+Here we present an example where Go's interfaces made it easy to refactor some existing code to make it more flexible and extensible.
+
+Originally, the standard library's RPC package used a custom wire format called gob. For a particular application, we wanted to use
+JSON as an alternate wire format.
+
+We first defined a pair of interfaces to describe the functionality of the existing wire format, one for the client, and one for
+the server (depicted(vt. 描述；描画) below).
+
+type ServerCodec interface {
+ ReadRequestHeader(*Request) error
+ ReadRequestBody(interface{}) error
+ WriteResponse(*Response, interface{}) error
+ Close() error
+}
+
+On the server side, we then changed two internal function signatures to accept the ServerCodec interface instead of our
+existing gob.Encoder. Here's one of them:
+
+func sendResponse(sending *sync.Mutex, req *Request,
+ reply interface{}, enc *gob.Encoder, errmsg string)
+
+became
+
+func sendResponse(sending *sync.Mutex, req *Request,
+  reply interface{}, enc ServerCodec, errmsg string)
+
+We then wrote a trivial gobServerCodec wrapper to reproduce the original functionality. From there it is simple to build a jsonServerCodec.
+
+After some similar changes to the client side, this was the full extent of the work we needed to do on the RPC package. This whole
+exercise took about 20 minutes! After tidying up and testing the new code, the final changeset was submitted.
+
+In an inheritance-oriented language like Java or C++, the obvious path would be to generalize the RPC class, and create JsonRPC and
+GobRPC subclasses. However, this approach becomes tricky if you want to make a further generalization orthogonal(正交的) to that
+hierarchy. (For example, if you were to implement an alternate RPC standard). In our Go package, we took a route that is both
+conceptually simpler and requires less code be written or changed.
+
+
+
+lest [lest]  conj. 唯恐，以免；担心
+unwieldy [ʌn'wiːldɪ] adj. 笨拙的；笨重的；不灵便的；难处理的
+
+
+A vital(adj. 至关重要的；生死攸关的；有活力的) quality for any codebase is maintainability. As needs change, it is essential to adapt
+your code easily and cleanly, lest it become unwieldy to work with. We believe Go's lightweight, composition-oriented type system
+provides a means of structuring code that scales.
+
+By Andrew Gerrand

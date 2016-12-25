@@ -1,0 +1,265 @@
+
+The Go Blog
+Errors are values
+
+12 January 2015
+
+lament [lə'ment]
+    n. 挽歌；恸哭；悲痛之情
+    vi. 哀悼；悲叹；悔恨
+    vt. 哀悼；痛惜
+
+A common point of discussion among Go programmers, especially those new to the language, is how to handle errors. The conversation
+often turns into a lament at the number of times the sequence
+
+if err != nil {
+    return err
+}
+
+
+perception [pə'sepʃ(ə)n] n. 知觉；[生理] 感觉；看法；洞察力；获取
+
+
+
+shows up. We recently scanned all the open source projects we could find and discovered that this snippet occurs only once per page
+or two, less often than some would have you believe. Still, if the perception persists that one must type
+
+if err != nil
+
+all the time, something must be wrong, and the obvious target is Go itself.
+
+unfortunate [ʌn'fɔːtʃ(ə)nət] adj. 不幸的；令人遗憾的；不成功的
+misleading [mɪs'liːdɪŋ] adj. 令人误解的；引入歧途的
+clumsy ['klʌmzɪ] adj. 笨拙的
+
+This is unfortunate, misleading, and easily corrected. Perhaps what is happening is that programmers new to Go
+ask, "How does one handle errors?", learn this pattern, and stop there. In other languages, one might use a try-catch
+block or other such mechanism to handle errors. Therefore, the programmer thinks, when I would have used a try-catch
+in my old language, I will just type if err != nil in Go. Over time the Go code collects many such snippets, and the result feels clumsy.
+
+
+explanation [eksplə'neɪʃ(ə)n] n. 说明，解释；辩解
+fit [fɪt]
+    vt. 安装；使……适应；使……合身；与……相符
+    vi. 符合，配合；适合；合身
+    adj. 健康的；合适的；恰当的；准备好的
+    n. 合身；发作；痉挛
+
+
+Regardless of whether this explanation fits, it is clear that these Go programmers miss a fundamental point about errors: Errors are values.
+
+Values can be programmed, and since errors are values, errors can be programmed.
+
+
+countless ['kaʊntlɪs] adj. 无数的；数不尽的
+rote1 [rəut] n. 生硬的方法；刻板的程序；老一套   短语:by rote 强记，死记硬背
+
+
+Of course a common statement involving an error value is to test whether it is nil, but there are countless
+other things one can do with an error value, and application of some of those other things can make your program
+better, eliminating much of the boilerplate that arises if every error is checked with a rote if statement.
+
+Here's a simple example from the bufio package's Scanner type. Its Scan method performs the underlying I/O, which
+can of course lead to an error. Yet the Scan method does not expose an error at all. Instead, it returns a boolean, and
+a separate method, to be run at the end of the scan, reports whether an error occurred. Client code looks like this:
+
+scanner := bufio.NewScanner(input)
+for scanner.Scan() {
+    token := scanner.Text()
+    // process token
+}
+if err := scanner.Err(); err != nil {
+    // process the error
+}
+
+Sure, there is a nil check for an error, but it appears and executes only once. The Scan method could instead have been defined as
+
+func (s *Scanner) Scan() (token []byte, error)
+
+and then the example user code might be (depending on how the token is retrieved),
+
+scanner := bufio.NewScanner(input)
+for {
+    token, err := scanner.Scan()
+    if err != nil {
+        return err // or maybe break
+    }
+    // process token
+}
+
+
+obscure [əb'skjʊə]
+    adj. 昏暗的，朦胧的；晦涩的，不清楚的；隐蔽的；不著名的，无名的
+    vt. 使…模糊不清，掩盖；隐藏；使难理解
+    n. 某种模糊的或不清楚的东西
+
+
+
+This isn't very different, but there is one important distinction. In this code, the client must check for an error on
+every iteration, but in the real Scanner API, the error handling is abstracted away from the key API element, which is
+iterating over tokens. With the real API, the client's code therefore feels more natural: loop until done, then worry
+about errors. Error handling does not obscure the flow of control.
+
+Under the covers what's happening, of course, is that as soon as Scan encounters an I/O error, it records it and returns
+false. A separate method, Err, reports the error value when the client asks. Trivial though this is, it's not the same as putting
+
+if err != nil
+
+
+
+nonetheless [nʌnðə'les] adv. 尽管如此，但是
+
+
+everywhere or asking the client to check for an error after every token. It's programming with error values. Simple
+programming, yes, but programming nonetheless.
+
+
+stress [stres] n. 压力；强调；紧张；重要性；重读  vt. 强调；使紧张；加压力于；用重音读
+It's worth stressing that whatever the design, it's critical that the program check the errors however they are
+exposed. The discussion here is not about how to avoid checking errors, it's about using the language to handle errors with grace.
+
+enthusiastic [ɪn,θjuːzɪ'æstɪk; en-] adj. 热情的；热心的；狂热的
+lament [lə'ment] n. 挽歌；恸哭；悲痛之情 vi. 哀悼；悲叹；悔恨 vt. 哀悼；痛惜
+
+
+schematically [ski'mætikli] adv. 计划性地；按照图式
+
+The topic of repetitive error-checking code arose when I attended the autumn 2014 GoCon in Tokyo. An enthusiastic gopher, who
+goes by @jxck_ on Twitter, echoed the familiar lament about error checking. He had some code that looked schematically like this:
+
+_, err = fd.Write(p0[a:b])
+if err != nil {
+    return err
+}
+_, err = fd.Write(p1[c:d])
+if err != nil {
+    return err
+}
+_, err = fd.Write(p2[e:f])
+if err != nil {
+    return err
+}
+// and so on
+
+
+idealized [aɪ'diəl,aɪz]  adj. 理想化的
+It is very repetitive. In the real code, which was longer, there is more going on so it's not easy to just refactor
+this using a helper function, but in this idealized form, a function literal closing over the error variable would help:
+
+var err error
+write := func(buf []byte) {
+    if err != nil {
+        return
+    }
+    _, err = w.Write(buf)
+}
+write(p0[a:b])
+write(p1[c:d])
+write(p2[e:f])
+// and so on
+if err != nil {
+    return err
+}
+
+This pattern works well, but requires a closure in each function doing the writes; a separate helper function is clumsier
+to use because the err variable needs to be maintained across calls (try it).
+
+After a long exchange 经过长时间的交流
+
+hamper ['hæmpə]
+    vt.
+        妨碍，阻碍，阻止:
+        A steady rain hampered the progress of the work.
+        持续不停的大雨妨碍了工程的进展。
+        束缚，抑制，限制；牵制:
+        Her talent was hampered by her poor family when she was a small girl.
+        由于幼年时期家境贫寒，她的才能没能得到充分的展示。
+        You would hamper yourself with that fellow.
+        你会受到那个家伙的牵连。
+
+barrier ['bærɪə] n. 障碍物，屏障；界线 vt. 把…关入栅栏
+laptop ['læptɒp] n. 膝上型轻便电脑，笔记本电脑
+
+
+We can make this cleaner, more general, and reusable by borrowing the idea from the Scan method above. I mentioned this technique
+in our discussion but @jxck_ didn't see how to apply it. After a long exchange, hampered somewhat by a language barrier(语言障碍,意思是两个人说不同的语言), I asked
+if I could just borrow his laptop and show him by typing some code.
+
+I defined an object called an errWriter, something like this:
+
+type errWriter struct {
+    w   io.Writer
+    err error
+}
+
+and gave it one method, write. It doesn't need to have the standard Write signature, and it's lower-cased in part to highlight the
+distinction. The write method calls the Write method of the underlying Writer and records the first error for future reference:
+
+func (ew *errWriter) write(buf []byte) {
+    if ew.err != nil {
+        return
+    }
+    _, ew.err = ew.w.Write(buf)
+}
+
+As soon as an error occurs, the write method becomes a no-op but the error value is saved.
+
+Given the errWriter type and its write method, the code above can be refactored:
+
+ew := &errWriter{w: fd}
+ew.write(p0[a:b])
+ew.write(p1[c:d])
+ew.write(p2[e:f])
+// and so on
+if ew.err != nil {
+    return ew.err
+}
+
+This is cleaner, even compared to the use of a closure, and also makes the actual sequence of writes being done easier
+to see on the page. There is no clutter any more. Programming with error values (and interfaces) has made the code nicer.
+
+It's likely that some other piece of code in the same package can build on this idea, or even use errWriter directly.
+
+artificial [ɑːtɪ'fɪʃ(ə)l] adj. 人造的；仿造的；虚伪的；非原产地的；武断的
+coalesce [,kəʊə'les] vi. 合并；结合；联合 vt. 使…联合；使…合并
+
+
+Also, once errWriter exists, there's more it could do to help, especially in less artificial examples. It could accumulate
+the byte count. It could coalesce writes into a single buffer that can then be transmitted atomically. And much more.
+
+salient ['seɪlɪənt] adj. 显著的；突出的；跳跃的 n. 凸角；突出部分
+
+In fact, this pattern appears often in the standard library. The archive/zip and net/http packages use it. More salient
+to this discussion, the bufio package's Writer is actually an implementation of the errWriter idea. Although bufio.Writer.Write returns
+an error, that is mostly about honoring the io.Writer interface. The Write method of bufio.Writer behaves just like our errWriter.write method
+above, with Flush reporting the error, so our example could be written like this:
+
+b := bufio.NewWriter(fd)
+b.Write(p0[a:b])
+b.Write(p1[c:d])
+b.Write(p2[e:f])
+// and so on
+if b.Flush() != nil {
+    return b.Flush()
+}
+
+
+drawback ['drɔːbæk] n. 缺点，不利条件；退税
+
+
+
+There is one significant drawback to this approach, at least for some applications: there is no way to know how much of the
+processing completed before the error occurred. If that information is important, a more fine-grained approach is
+necessary. Often, though, an all-or-nothing check at the end is sufficient.
+
+We've looked at just one technique for avoiding repetitive error handling code. Keep in mind that the use of errWriter
+or bufio.Writer isn't the only way to simplify error handling, and this approach is not suitable for all situations. The
+key lesson, however, is that errors are values and the full power of the Go programming language is available for processing them.
+
+Use the language to simplify your error handling.
+
+But remember: Whatever you do, always check your errors!
+
+Finally, for the full story of my interaction with @jxck_, including a little video he recorded, visit his blog.
+
+By Rob Pike
