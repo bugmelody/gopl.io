@@ -8,13 +8,18 @@ package main
 
 import (
 	"fmt"
+	// 使用 . "net", 之后可以将 net.XXX 直接写为 XXX
 	. "net"
 )
 
 //!+
+// 测试 FlagUp 这个 bit 是否为 1
 func IsUp(v Flags) bool     { return v&FlagUp == FlagUp }
+// 将 FlagUp 这个 bit 清0
 func TurnDown(v *Flags)     { *v &^= FlagUp }
+// 将 FlagBroadcast 这个 bit 设置为 1
 func SetBroadcast(v *Flags) { *v |= FlagBroadcast }
+// 测试 FlagBroadcast, FlagMulticast 其中之一是否被设置
 func IsCast(v Flags) bool   { return v&(FlagBroadcast|FlagMulticast) != 0 }
 
 func main() {

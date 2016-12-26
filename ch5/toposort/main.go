@@ -56,7 +56,9 @@ func main() {
 }
 
 func topoSort(m map[string][]string) []string {
+	// 最后要返回的结果
 	var order []string
+	// seen 表示是否已经被 visitAll 访问过
 	seen := make(map[string]bool)
 	var visitAll func(items []string)
 
@@ -64,6 +66,7 @@ func topoSort(m map[string][]string) []string {
 		for _, item := range items {
 			if !seen[item] {
 				seen[item] = true
+				// 递归调用,最深的递归最先进行 order = append(order, item) 操作, 也就是最先将最基础的学科进行 append
 				visitAll(m[item])
 				order = append(order, item)
 			}

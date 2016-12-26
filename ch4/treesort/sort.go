@@ -4,6 +4,7 @@
 // See page 101.
 
 // Package treesort provides insertion sort using an unbalanced binary tree.
+// 对外只提供Sort,具体的实现是unbalanced binary tree.
 package treesort
 
 //!+
@@ -13,6 +14,7 @@ type tree struct {
 }
 
 // Sort sorts values in place.
+// in place 1.在适当的位置上 2.适当的，恰当的 3.就地
 func Sort(values []int) {
 	var root *tree
 	for _, v := range values {
@@ -25,6 +27,7 @@ func Sort(values []int) {
 // and returns the resulting slice.
 func appendValues(values []int, t *tree) []int {
 	if t != nil {
+		// 如果不是空树,将树中的数据按序append到values.
 		values = appendValues(values, t.left)
 		values = append(values, t.value)
 		values = appendValues(values, t.right)

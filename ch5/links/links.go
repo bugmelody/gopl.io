@@ -27,11 +27,13 @@ func Extract(url string) ([]string, error) {
 	}
 
 	doc, err := html.Parse(resp.Body)
+	// resp.Body 读取完毕, 不再需要, 可以 close 掉了.
 	resp.Body.Close()
 	if err != nil {
 		return nil, fmt.Errorf("parsing %s as HTML: %v", url, err)
 	}
 
+	// 函数最终要返回的链接slice
 	var links []string
 	visitNode := func(n *html.Node) {
 		if n.Type == html.ElementNode && n.Data == "a" {

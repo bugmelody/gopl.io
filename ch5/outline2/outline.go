@@ -48,6 +48,7 @@ func outline(url string) error {
 // post is called after (postorder).
 func forEachNode(n *html.Node, pre, post func(n *html.Node)) {
 	if pre != nil {
+		// 使用 func 与 nil 进行比较, 是没有问题的, 虽然 func 是不可比较的.
 		pre(n)
 	}
 
@@ -56,6 +57,7 @@ func forEachNode(n *html.Node, pre, post func(n *html.Node)) {
 	}
 
 	if post != nil {
+		// 使用 func 与 nil 进行比较, 是没有问题的, 虽然 func 是不可比较的.
 		post(n)
 	}
 }
@@ -73,6 +75,7 @@ func startElement(n *html.Node) {
 		*/
 		/**
 		这个行为在 fmt 包说明中有讲
+		decimal number [数] 十进制数；小数
 		Width is specified by an optional decimal number immediately preceding the
 		verb. If absent, the width is whatever is necessary to represent the value.
 		Precision is specified after the (optional) width by a period followed by a
@@ -87,9 +90,8 @@ func startElement(n *html.Node) {
 		
 		Width and precision are measured in units of Unicode code points, that is,
 		runes. (This differs from C's printf where the units are always measured in
-		bytes.) Either or both of the flags may be replaced with the character '*',
-		causing their values to be obtained from the next operand, which must be of
-		type int.
+		bytes.) Either or both of the flags(指width或precision) may be replaced with the character '*',
+		causing their values to be obtained from the next operand, which must be of type int.
 		*/
 		fmt.Printf("%*s<%s>\n", depth*2, "", n.Data)
 		depth++

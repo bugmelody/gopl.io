@@ -265,28 +265,30 @@ vacate [veɪ'keɪt; və'keɪt]
 vi. 空出，腾出；辞职；休假
 vt. 空出，搬出；取消；使撤退
 ================================================================================================================================
-到此
 p54
 Although Go provides unsigned numbers and arithmetic, we tend to use the signed int form
 even for quantities that can't be negative, such as the length of an array, though uint might
 seem a more obvious choice. Indeed, the built-in len function returns a signed int, as in this
 loop which announces prize medals in reverse order:
+prize [praɪz] n. 奖品；奖赏；战利品 ||| medal ['med(ə)l] n. 勋章，奖章；纪念章
 
 medals := []string{"gold", "silver", "bronze"}
 for i := len(medals) - 1; i >= 0; i-- {
   fmt.Println(medals[i]) // "bronze", "silver", "gold"
 }
 
+calamitous [kə'læmɪtəs] adj. 灾难的，悲惨的；不幸的
 The alternative would be calamitous. If len returned an unsigned number, then i too would
 be a uint, and the condition i >= 0 would always be true by definition. After the third itera-
 tion, in which i == 0, the i-- statement would cause i to become not −1, but the maximum
 uint value (for example, 264−1), and the evaluation of medals[i] would fail at run time, or
-panic (§5.9), by attempting to access an element outside the bounds of the slice.
+panic, by attempting to access an element outside the bounds of the slice.
 ================================================================================================================================
 p55
 Many integer-to-integer conversions do not entail any change in value; they just tell the compiler how
 to interpret a value. But a conversion that narrows a big integer into a smaller one, or a conversion
 from integer to floating-point or vice versa, may change the value or lose precision:
+entail [ɪn'teɪl; en-] vt. 使需要，必需；承担；遗传给；蕴含 n. 引起；需要；继承
 
 f := 3.141 // a float64
 i := int(f)
@@ -304,6 +306,7 @@ i := int(f) // result is implementation-dependent
 p55,p56
 When printing numbers using the fmt package, we can control the radix and format with the
 %d, %o, and %x verbs, as shown in this example:
+radix ['reidiks] n. 1.根；根源 2.【解剖学、植物学】根 3.【语言学】词根 4.【数学】根值；基，基数
 
 o := 0666
 fmt.Printf("%d %[1]o %#[1]o\n", o) // "438 666 0666"
@@ -316,6 +319,7 @@ Note the use of two fmt tricks. Usually a Printf format string containing multip
 would require the same number of extra operands, but the [1] "adverbs" after % tell Printf to
 use the first operand over and over again. Second, the # adverb for %o or %x or %X tells Printf
 to emit a 0 or 0x or 0X prefix respectively.
+emit [ɪ'mɪt] vt. 发出，放射；发行；发表
 
 Rune literals are written as a character within single quotes. The simplest example is an ASCII
 character like 'a', but it's possible to write any Unicode code point either directly or with
@@ -340,7 +344,7 @@ var f float32 = 16777216 // 1 << 24
 fmt.Println(f == f+1) // "true"!
 ================================================================================================================================
 Floating-point values are conveniently printed with Printf's %g verb, which chooses the most
-compact representation that has adequate precision, but for tables of data, the %e (exponent)
+compact representation(最紧凑的表示形式) that has adequate precision, but for tables of data, the %e (exponent)
 or %f (no exponent) forms may be more appropriate. All three verbs allow field width and
 numeric precision to be controlled.
 
@@ -361,7 +365,9 @@ x = 7 e x = 1096.633
 ###
 
 The code above prints the powers of e with three decimal digits of precision, aligned in an eight-character field
+1096.633 刚好是8个字符.
 ================================================================================================================================
+fraught with peril: 充满危险
 The function math.IsNaN tests whether its argument is a not-a-number value, and math.NaN
 returns such a value. It's tempting to use NaN as a sentinel value in a numeric computation,
 but testing whether a specific computational result is equal to NaN is fraught with peril
@@ -369,7 +375,8 @@ because any comparison with NaN always yields false:
 nan := math.NaN()
 fmt.Println(nan == nan, nan < nan, nan > nan) // "false false false"
 ================================================================================================================================
-If a function that returns a floating-point result might fail, it's better to report the failure separately, like this:
+If a function that returns a floating-point result might fail, it's better
+to report the failure separately, like this:
 
 func compute() (value float64, ok bool) {
   // ...
@@ -378,9 +385,6 @@ func compute() (value float64, ok bool) {
   }
   return result, true
 }
-
-
-??????????????????????????????????????????????????????????????????????????
 ================================================================================================================================
 Since && has higher precedence than || (mnemonic: && is boolean multiplication, || is
 boolean addition), no parentheses are required for conditions of this form:
@@ -390,7 +394,6 @@ if 'a' <= c && c <= 'z' ||
   '0' <= c && c <= '9' {
   // ...ASCII letter or digit...
 }
-
 ================================================================================================================================
 The built-in len function returns the number of bytes (not runes) in a string, and the index
 operation s[i] retrieves the i-th byte of string s, where 0 ≤ i < len(s).
@@ -407,6 +410,8 @@ fmt.Println("goodbye" + s[5:]) // "goodbye, world"
 
 Strings may be compared with comparison operators like == and <; the comparison is done
 byte by byte, so the result is the natural lexicographic ordering.
+字符串的比较(==和<)是基于字节的
+
 
 String values are immutable: the byte sequence contained in a string value can never be
 changed, though of course we can assign a new value to a string variable. To append one
@@ -436,8 +441,7 @@ A raw string literal is written `...`, using backquotes instead of double quotes
 string literal, no escape sequences are processed; the contents are taken literally, including
 backslashes and newlines, so a raw string literal may spread over several lines in the program
 source. The only processing is that carriage returns are deleted so that the value of the string
-is the same on all platforms, including those that conventionally put carriage returns in text
-files.
+is the same on all platforms, including those that conventionally put carriage returns in text files.
 ================================================================================================================================
 p68
 Thanks to the nice properties of UTF-8, many string operations don't require decoding. We
@@ -467,7 +471,6 @@ using the same logic for UTF-8-encoded text as for raw bytes. This is not true f
 encodings. (The functions above are drawn from the strings package, though its implementation
 of Contains uses a hashing technique to search more efficiently.)
 ================================================================================================================================
-
 package main
 
 import (
@@ -477,14 +480,25 @@ import (
 
 func main() {
 	s := "Hello, 世界"
-	fmt.Println(len(s))                    // "13"
-	fmt.Println(utf8.RuneCountInString(s)) // "9"
+	fmt.Println(len(s))                    // "13" // 13个字节
+	fmt.Println(utf8.RuneCountInString(s)) // "9" // 9个字符
 
 	for i := 0; i < len(s); {
 		r, size := utf8.DecodeRuneInString(s[i:])
 		fmt.Printf("%d\t%c\n", i, r)
 		i += size
 	}
+	/**
+	0	H
+	1	e
+	2	l
+	3	l
+	4	o
+	5	,
+	6	 
+	7	世
+	10	界
+	 */
 
 	/**	Each call to DecodeRuneInString returns r, the rune itself, and size, the number of bytes
 	occupied by the UTF-8 encoding of r. The size is used to update the byte index i of the next
@@ -496,24 +510,35 @@ func main() {
 	for i1, r1 := range s {
 		fmt.Printf("%d\t%q\t%d\n", i1, r1, r1)
 	}
+	/**
+	0	'H'	72
+	1	'e'	101
+	2	'l'	108
+	3	'l'	108
+	4	'o'	111
+	5	','	44
+	6	' '	32
+	7	'世'	19990
+	10	'界'	30028`
+	 */
 
 	// We could use a simple range loop to count the number of runes in a string, like this:
 	n := 0
 	for range s {
 		n++
 	}
-	fmt.Println("n: ", n)
+	fmt.Println("n: ", n) // n:  9
 
 
 	/** A []rune conversion applied to a UTF-8-encoded string returns the sequence of Unicode code points that the string encodes:
   (The verb % x in the first Printf inserts a space between each pair of hex digits.)
 	*/
 	s2 := "代表我们传递一"
-	fmt.Printf("% x\n", s2)
+	fmt.Printf("% x\n", s2) // e4 bb a3 e8 a1 a8 e6 88 91 e4 bb ac e4 bc a0 e9 80 92 e4 b8 80
 	r2 := []rune(s2)
-	fmt.Printf("%x\n", r2)
+	fmt.Printf("%x\n", r2) // [4ee3 8868 6211 4eec 4f20 9012 4e00]
 	// If a slice of runes is converted to a string, it produces the concatenation of the UTF-8 encodings of each rune:
-	fmt.Println(string(r2))
+	fmt.Println(string(r2)) // 代表我们传递一
 
 	/////////////////////////////////////
 
@@ -527,7 +552,7 @@ func main() {
 }
 ================================================================================================================================
 Because strings are immutable, building up strings incrementally can involve a lot of allocation and copying.
-In such cases, it's more efficient to use the bytes.Buffer type
+In such cases, it's more efficient to use the bytes.Buffer type.
 ================================================================================================================================
 Strings can be converted to byte slices and back again:
 
@@ -585,18 +610,21 @@ import (
 func main() {
 	x := 123
 	y := fmt.Sprintf("%d", x)
-	fmt.Println(y, strconv.Itoa(x))
+	// fmt.Println: Spaces are always added between operands and a newline is appended.
+	fmt.Println(y, strconv.Itoa(x)) // 123 123
 
+	// 格式化为2进制
 	fmt.Println(strconv.FormatInt(int64(x), 2)) // "1111011"
 
+	// %b表示格式化为2进制
 	s := fmt.Sprintf("x=%b", x) // "x=1111011"
 	fmt.Println(s)
 
 	x1, _ := strconv.Atoi("123")
-	fmt.Println(x1)
-	
+	fmt.Println(x1) // 123
+
 	y1, _ := strconv.ParseInt("123", 10, 64)
-	fmt.Println(y1)
+	fmt.Println(y1) // 123
 }
 ================================================================================================================================
 Since constant values are known to the compiler, constant expressions may appear in types, specifically
@@ -699,7 +727,7 @@ import (
 )
 
 func main() {
-	var runes []rune
+	var runes []rune // nil slice
 	for _, r := range "Hello, 世界" {
 		runes = append(runes, r)
 	}
@@ -709,7 +737,7 @@ func main() {
 The loop uses append to build the slice of nine runes encoded by the string literal, although this
 specific problem is more conveniently solved by using the built-in conversion []rune("Hello, 世界"). 
 
-为什么slice没有经过make也能使用呢???? 因为 append可以作用于 nil slice 和 非 nil slice,行为是一样的
+为什么slice没有经过make也能使用呢? 因为 append 可以作用于 nil slice 和 非 nil slice,行为是一样的
 ================================================================================================================================
 The built-in append function may use a more sophisticated growth strategy than appendInt's simplistic
 one. Usually we don't know whether a given call to append will cause a reallocation, so we can't assume
@@ -725,6 +753,7 @@ the length or capacity of a slice or make it refer to a different underlying arr
 correctly, it's important to bear in mind that although the elements of the underlying array are indirect,
 the slice's pointer, length, and capacity are not. To update them requires an assignment like the one above.
 In this respect, slices are not "pure" reference types but resemble an aggregate type such as this struct:
+resemble [rɪ'zemb(ə)l] vt. 类似，像
 
 type IntSlice struct {
     ptr      *int
@@ -789,7 +818,7 @@ ages["carol"] = 21 // panic: assignment to entry in nil map
 
 You must allocate the map before you can store into it. 
 
-qc注: 对于 slice 和 append 就不是这样, append 可以作用于 nil slice, 待验证!!!
+qc注: slice 和 append 之间就不是这样, append 可以作用于 nil slice!!!
 ================================================================================================================================
 As with slices, maps cannot be compared to each other; the only legal comparison is with nil. To test
 whether two maps contain the same keys and the same associated values, we must write a loop:
@@ -812,12 +841,6 @@ call below would incorrectly report its arguments as equal:
 equal(map[string]int{"A": 0}, map[string]int{"B": 42}) // True if equal is written incorrectly.
 ================================================================================================================================
 gopl.io/ch4/graph
-
-The addEdge function shows the idiomatic way to populate a map lazily, that is, to initialize
-each value as its key appears for the first time. The hasEdge function shows how the zero
-value of a missing map entry is often put to work: even if neither from nor to is present,
-graph[from][to] will always give a meaningful result.
-?????????????????????????????????????????????????????????????????????????????????????????????????????????????????????
 ================================================================================================================================
 type Employee struct {
     ID        int
@@ -834,7 +857,7 @@ var dilbert Employee
 The individual fields of dilbert are accessed using dot notation like dilbert.Name and dilbert.DoB. Because
 dilbert is a variable, its fields are variables too, so we may assign to a field:
 
-dilbert.Salary -= 5000 // demoted, for writing too few lines of code
+dilbert.Salary -= 5000 // demoted(demote [diː'məʊt] vt. 使降级；使降职), for writing too few lines of code
 
 or take its address and access it through a pointer:
 
@@ -912,8 +935,7 @@ import "p"
 var _ = p.T{a: 1, b: 2} // compile error: can't reference a, b
 var _ = p.T{1, 2} // compile error: can't reference a, b
 
-Although the last line above doesn't mention the unexported field identifiers, it's
-really using them implicitly, so it's not allowed.
+Although the last line above doesn't mention the unexported field identifiers, it's really using them implicitly, so it's not allowed.
 ================================================================================================================================
 If all the fields of a struct are comparable, the struct itself is comparable, so two expressions of that
 type may be compared using == or !=. The == operation compares the corresponding fields of the two structs
@@ -936,14 +958,11 @@ type address struct {
 hits := make(map[address]int)
 hits[address{"golang.org", 443}]++
 ================================================================================================================================
-p104
-4.4.3. Struct Embedding and Anonymous Fields
-================================================================================================================================
 You may occasionally encounter a function declaration without a body, indicating that the
 function is implemented in a language other than Go. Such a declaration defines the function signature.
 
 package math
-func Sin(x float64) float64 // 由汇编做的函数实现
+func Sin(x float64) float64 // 可能是由汇编或c语言实现
 ================================================================================================================================
 The golang.org/x/... repositories hold packages designed and maintained by the Go team for applications such as
 networking, internationalized text processing, mobile platforms, image manipulation, cryptography, and developer
@@ -960,7 +979,7 @@ when the function returns, the caller's stack is as it was before the call.
 
 有一点值得注意：outline有入栈操作，但没有相对应的出栈操作。
 当outline调用自身时，被调用者接收的是stack的拷贝。被调用者的入栈操作，修改的是stack的拷贝，而不是调
-用者的stack,因对当函数返回时,调用者的stack并未被修改。
+用者的stack,因此当函数返回时,调用者的stack并未被修改。
 
 我来写段测试代码验证这个问题
 package main
@@ -1024,8 +1043,7 @@ $ go doc os.File.Read
 func (f *File) Read(b []byte) (n int, err error)
 
     Read reads up to len(b) bytes from the File. It returns the number of bytes
-    read and an error, if any. EOF is signaled by a zero count with err set to
-    io.EOF.
+    read and an error, if any. EOF is signaled by a zero count with err set to io.EOF.
 **
 ================================================================================================================================
 doc, err := html.Parse(resp.Body)
@@ -1035,7 +1053,7 @@ resp.Body.Close()
 }
 
 The fmt.Errorf function formats an error message using fmt.Sprintf and returns a new
-error value. We use it to build descriptive errors by successively prefixing additional context
+error value. We use it to build descriptive errors by successively( 相继地；接连着地) prefixing additional context
 information to the original error message . When the error is ultimately handled by the
 program's main function, it should provide a clear causal chain from the root problem to the
 overall failure, reminiscent of a NASA accident investigation:
@@ -1104,12 +1122,12 @@ fmt.Println(strings.Map(add1, "HAL-9000")) // "IBM.:111"
 fmt.Println(strings.Map(add1, "VMS")) // "WNT"
 fmt.Println(strings.Map(add1, "Admix")) // "Benjy"
 
-通过 $ go doc strings.Map 查看函数定义
+$ go doc strings.Map
+func Map(mapping func(rune) rune, s string) string
+    Map returns a copy of the string s with all its characters modified
+    according to the mapping function. If mapping returns a negative value, the
+    character is dropped from the string with no replacement.
 ================================================================================================================================
-The functions also indent the output using another fmt.Printf trick. The * adverb in %*s
-prints a string padded with a variable number of spaces. The width and the string are
-provided by the arguments depth*2 and "".
-
 gopl.io/ch5/outline2
 ================================================================================================================================
 /gopl.io/ch5/toposort
@@ -1125,14 +1143,10 @@ visitAll := func(items []string) {
   // ...
 }
 ================================================================================================================================
-到此
-Instead of appending the raw href attribute value to the links slice, this version parses it as a
-URL relative to the base URL of the document, resp.Request.URL. The resulting link is in
-absolute form, suitable for use in a call to http.Get.
+Instead of appending the raw href attribute value to the links slice, this version parses it as a URL relative to the base
+URL of the document, resp.Request.URL. The resulting link is in absolute form, suitable for use in a call to http.Get.
 
 gopl.io/ch5/links
-================================================================================================================================
-p140 : 5.6.1. Caveat: Capturing Iteration Variables
 ================================================================================================================================
 Although the ...int parameter behaves like a slice within the function body, the type of a
 variadic function is distinct from the type of a function with an ordinary slice parameter.
@@ -1142,11 +1156,9 @@ func g([]int) {}
 
 fmt.Printf("%T\n", f) // "func(...int)"
 fmt.Printf("%T\n", g) // "func([]int)"
-
-...int 只是行为上像 slice
 ================================================================================================================================
 Because deferred functions aren't executed until the very end of a function's execution, a
-defer statement in a loop deserves extra scrutiny(scrutiny:详细查看,监视). The code below could run out of file
+defer statement in a loop deserves extra scrutiny(scrutiny ['skruːtɪnɪ]:详细查看,监视). The code below could run out of file
 descriptors since no file will be closed until all files have been processed:
 
 for _, filename := range filenames {
@@ -1158,8 +1170,7 @@ for _, filename := range filenames {
   // ...process f...
 }
 
-One solution is to move the loop body, including the defer statement, into another function
-that is called on each iteration.
+One solution is to move the loop body, including the defer statement, into another function that is called on each iteration.
 
 for _, filename := range filenames {
   if err := doFile(filename); err != nil {
@@ -1777,11 +1788,17 @@ fmt.Printf("%T\n", w) // "*bytes.Buffer"
 
 Internally, fmt uses reflection to obtain the name of the interface’s dynamic type.
 ================================================================================================================================
+================================================================================================================================
+p104 4.4.3. Struct Embedding and Anonymous Fields
+p140 : 5.6.1. Caveat: Capturing Iteration Variables
 7.5.1. Caveat: An Interface Containing a Nil Pointer IsNon-Nil
 p341 12.5 Setting Variables with reflect.Value
 p344 12.6. Example: Decoding S-Expressions
 p348 12.7. Accessing Struct Field Tags
 12.8. Displaying the Methods of a Type
+
+================================================================================================================================
+
 ================================================================================================================================
 ch12/sexpr
 ================================================================================================================================
