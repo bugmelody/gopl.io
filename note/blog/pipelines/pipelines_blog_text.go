@@ -1,5 +1,5 @@
 Go Concurrency Patterns: Pipelines and cancellation
-[[[1-over]]] 2016-12-23 15:13:23
+[[[2-over]]] 2016-12-30 15:21:31
 
 13 March 2014
 
@@ -9,11 +9,13 @@ Go's concurrency primitives make it easy to construct streaming data pipelines t
 
 What is a pipeline?
 
+informally [in'fɔ:məli] adv. 非正式地；不拘礼节地
 There's no formal definition of a pipeline in Go; it's just one of many kinds of concurrent programs. Informally, a pipeline is a series of stages connected by channels, where each stage is a group of goroutines running the same function. In each stage, the goroutines
 
-receive values from upstream via inbound channels
-perform some function on that data, usually producing new values
-send values downstream via outbound channels
+    * receive values from upstream via inbound channels
+    * perform some function on that data, usually producing new values
+    * send values downstream via outbound channels
+
 Each stage has any number of inbound and outbound channels, except the first and last stages, which have only outbound or inbound channels, respectively. The first stage is sometimes called the source or producer; the last stage, the sink or consumer.
 
 We'll begin with a simple example pipeline to explain the ideas and techniques. Later, we'll present a more realistic example.
@@ -31,7 +33,7 @@ func gen(nums ...int) <-chan int {
         for _, n := range nums {
             out <- n
         }
-        close(out)
+        close(out) // 通知下一个接收方,数据发送完毕
     }()
     return out
 }
@@ -44,10 +46,11 @@ func sq(in <-chan int) <-chan int {
         for n := range in {
             out <- n * n
         }
-        close(out)
+        close(out) // 通知下一个接收方,数据发送完毕
     }()
     return out
 }
+
 The main function sets up the pipeline and runs the final stage: it receives values from the second stage and prints each one, until the channel is closed:
 
 func main() {
@@ -59,11 +62,13 @@ func main() {
     fmt.Println(<-out) // 4
     fmt.Println(<-out) // 9
 }
+
 Since sq has the same type for its inbound and outbound channels, we can compose it any number of times. We can also rewrite main as a range loop, like the other stages:
 
 func main() {
     // Set up the pipeline and consume the output.
     for n := range sq(sq(gen(2, 3))) {
+        // 2*2 = 4 , 4*4 = 16
         fmt.Println(n) // 16 then 81
     }
 }
@@ -72,10 +77,10 @@ Fan-out, fan-in
 Fan-out, fan-in 的意义见: http://yaotiaochimei.blog.51cto.com/4911337/861438
 
 Multiple functions can read from the same channel until that channel is closed; this is called fan-out. This provides a way to distribute work amongst a group of workers to parallelize CPU use and I/O.
-fan-out: 一个chan将数据发给多个worker
+fan-out: 一个chan将数据发给多个worker function
 
 A function can read from multiple inputs and proceed until all are closed by multiplexing the input channels onto a single channel that's closed when all the inputs are closed. This is called fan-in.
-fan-in: 一个函数从多个 input channels 读取数据.
+fan-in: 一个function从多个 input channels 读取数据.
 
 We can change our pipeline to run two instances of sq, each reading from the same input channel. We introduce a new function, merge, to fan in the results:
 
@@ -92,7 +97,7 @@ func main() {
     }
 }
 
-The merge function converts a list of channels to a single channel by starting a goroutine for each inbound channel that copies the values to the sole outbound channel. Once all the output goroutines have been started, merge starts one more goroutine to close the outbound channel after all sends on that channel are done.
+The merge function converts a list of channels to a single channel by starting a goroutine for each inbound channel that copies the values to the sole outbound channel. Once all the output(见下方源码) goroutines have been started, merge starts one more goroutine to close the outbound channel after all sends on that channel are done.
 
 Sends on a closed channel panic, so it's important to ensure all sends are done before calling close. The sync.WaitGroup type provides a simple way to arrange this synchronization:
 
@@ -107,6 +112,7 @@ func merge(cs ...<-chan int) <-chan int {
         for n := range c {
             out <- n
         }
+        // 到这里,说明 c 已经被 close 并且 消耗完毕
         wg.Done()
     }
     wg.Add(len(cs))
@@ -118,7 +124,8 @@ func merge(cs ...<-chan int) <-chan int {
     // done.  This must start after the wg.Add call.
     go func() {
         wg.Wait()
-        close(out)
+        // 到这里, 所有 output goroutine 已经结束
+        close(out) // 通知接收者
     }()
     return out
 }
@@ -130,6 +137,7 @@ There is a pattern to our pipeline functions:
 stages close their outbound channels when all the send operations are done.
 stages keep receiving values from inbound channels until those channels are closed.
 This pattern(指上面的两句话) allows each receiving stage to be written as a range loop and ensures that all goroutines exit once all values have been successfully sent downstream.
+[range 语句会持续接受channel中的值,直到channel被close并且channel中的值被消耗完毕]
 
 make progress: 取得进展；前进
 But in real pipelines, stages don't always receive all the inbound values. Sometimes this is by design: the receiver may only need a subset of values to make progress. More often, a stage exits early because an inbound value represents an error in an earlier stage. In either case the receiver should not have to wait for the remaining values to arrive, and we want earlier stages to stop producing values that later stages don't need.
@@ -144,6 +152,7 @@ In our example pipeline, if a stage fails to consume all the inbound values, the
     // Since we didn't receive the second value from out,
     // one of the output goroutines is hung attempting to send it.
 }
+
 This is a resource leak(资源泄漏): goroutines consume memory and runtime resources, and heap references in goroutine stacks keep data from being garbage collected. Goroutines are not garbage collected; they must exit on their own.
 
 We need to arrange for the upstream stages of our pipeline to exit even when the downstream stages fail to receive all the inbound values. One way to do this is to change the outbound channels to have a buffer. A buffer can hold a fixed number of values; send operations complete immediately if there's room in the buffer:
@@ -158,7 +167,9 @@ When the number of values to be sent is known at channel creation time, a buffer
 func gen(nums ...int) <-chan int {
     out := make(chan int, len(nums))
     for _, n := range nums {
-        out <- n // 由于 out 这个 chan 的 buffer 长度为 len(nums), 因此这里的 send 操作不会阻塞
+        // 由于 out 这个 chan 的 buffer 长度为 len(nums), 因此这里的 send 操作不会阻塞
+        // 由于不会阻塞,因此没有必要单独创建一个goroutine用于send
+        out <- n
     }
     // 这里调用 close 会有问题吗? 参考 go doc builtin.close, close 只是标记一个状态,标记此状态表明了不能再send东西到 channel 中, 因此是没有问题的
     close(out)
@@ -171,13 +182,14 @@ func merge(cs ...<-chan int) <-chan int {
     var wg sync.WaitGroup
     out := make(chan int, 1) // enough space for the unread inputs
     // ... the rest is unchanged ...
+
 While this fixes the blocked goroutine in this program, this is bad code. The choice of buffer size of 1 here depends on knowing the number of values merge will receive and the number of values downstream stages will consume. This is fragile: if we pass an additional value to gen, or if the downstream stage reads any fewer values, we will again have blocked goroutines.
 
 Instead, we need to provide a way for downstream stages to indicate to the senders that they will stop accepting input.
 
 Explicit cancellation
 
-When main(指谁?) decides to exit without receiving all the values from out, it must tell the goroutines in the upstream stages to abandon the values they're trying it send. It does so by sending values on a channel called done. It sends two values since there are potentially two blocked senders:
+When main(指从out接收值的main函数) decides to exit without receiving all the values from out, it must tell the goroutines in the upstream stages to abandon the values they're trying it send. It does so by sending values on a channel called done. It sends two values since there are potentially two blocked senders:
 
 func main() {
     in := gen(2, 3)
@@ -187,13 +199,13 @@ func main() {
     c2 := sq(in)
 
     // Consume the first value from output.
-    done := make(chan struct{}, 2)// 缓冲为2
+    done := make(chan struct{}, 2)// 缓冲为2, 因为有 2 个 sq goroutine
     out := merge(done, c1, c2)
     fmt.Println(<-out) // 4 or 9
 
     // Tell the remaining senders we're leaving.
-    done <- struct{}{}
-    done <- struct{}{}
+    done <- struct{}{} // 通知1个sq goroutine
+    done <- struct{}{} // 通知1个sq goroutine
 }
 
 The sending goroutines replace their send operation with a select statement that proceeds either when the send on out happens or when they receive a value from done(被告知无需再发送). The value type of done is the empty struct because the value doesn't matter: it is the receive event that indicates the send on out should be abandoned. The output goroutines continue looping on their inbound channel, c, so the upstream stages are not blocked. (We'll discuss in a moment how to allow this loop to return early.)
@@ -212,6 +224,7 @@ func merge(done <-chan struct{}, cs ...<-chan int) <-chan int {
             case <-done:
             }
         }
+        // 到这里, c 已经被 close 并消耗完毕.
         wg.Done()
     }
     // ... the rest is unchanged ...
@@ -262,6 +275,7 @@ func merge(done <-chan struct{}, cs ...<-chan int) <-chan int {
         }
     }
     // ... the rest is unchanged ...
+    
 Similarly, sq can return as soon as done is closed. sq ensures its out channel is closed on all return paths via a defer statement:
 
 func sq(done <-chan struct{}, in <-chan int) <-chan int {
@@ -278,6 +292,7 @@ func sq(done <-chan struct{}, in <-chan int) <-chan int {
     }()
     return out
 }
+
 Here are the guidelines for pipeline construction:
 
 stages close their outbound channels when all the send operations are done.
@@ -398,7 +413,7 @@ func sumFiles(done <-chan struct{}, root string) (<-chan result, <-chan error) {
         // goroutine to close c once all the sends are done.
         go func() {
             wg.Wait()
-            close(c)
+            close(c) // 通知接收方没有数据发送了
         }()
         // No select needed here, since errc is buffered.
         errc <- err // err 是 filepath.Walk 的返回值, 将其发送到 errc
@@ -475,6 +490,7 @@ func digester(done <-chan struct{}, paths <-chan string, c chan<- result) {
         }
     }
 }
+
 Unlike our previous examples, digester does not close its output channel, as multiple goroutines are sending on a shared channel. Instead, code in MD5All arranges for the channel to be closed when all the digesters are done:
 
     // Start a fixed number of goroutines to read and digest files.

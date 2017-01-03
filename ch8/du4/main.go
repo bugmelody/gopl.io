@@ -30,6 +30,7 @@ func cancelled() bool {
 	// 对于 select,如果所有case都被阻塞,这时才会执行default
 	select {
 	case <-done:
+		// 注意,我们不会往done里面放任何数据,它只是用于cancellation
 		// receive成功,其实是代表done已经被close
 		return true
 	default:
@@ -86,13 +87,15 @@ loop:
 	for {
 		select {
 		case <-done:
-			/** returns if this case is ever selected, but before it returns it must first drain the fileSizes
+			/**
+			returns if this case is ever selected, but before it returns it must first drain the fileSizes
 			channel, discarding all values until the channel is closed. It does this to ensure that any active
-			calls to walkDir can run to completion without getting stuck sending to fileSizes */
+			calls to walkDir can run to completion without getting stuck sending to fileSizes
+			*/
 			// Drain fileSizes to allow existing goroutines to finish.
 			// 注意:fileSizes这个chan是无缓冲的,因此必须先消耗光里面的内容;否则,其他准备send的goroutine会阻塞
 			for range fileSizes {
-				// for range channel 循环完成的条件是channel被关闭并拉取完所有已发送的值
+				// for ... range chan 循环停止的唯一条件是 chan 被 close, 并且 chan 中的已发送元素被消耗完
 				// Do nothing.
 			}
 			// 现在 fileSizes 已经被关闭并拉取完所有已发送的值
@@ -129,8 +132,8 @@ func walkDir(dir string, n *sync.WaitGroup, fileSizes chan<- int64) {
 	}
 	for _, entry := range dirents(dir) {
 		/**
-				It might be profitable to poll the cancellation status again within walkDir’s loop, to avoid cre-
-		ating goroutines after the cancellation event. Cancellation involves a trade-off; a quicker
+		It might be profitable to poll the cancellation status again within walkDir’s loop, to avoid
+		creating goroutines after the cancellation event. Cancellation involves a trade-off; a quicker
 		response often requires more intrusive changes to program logic. Ensuring that no expensive
 		operations ever occur after the cancellation event may require updating many places in your
 		code, but often most of the benefit can be obtained by checking for cancellation in a few

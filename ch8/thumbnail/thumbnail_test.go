@@ -31,10 +31,10 @@ func makeThumbnails(filenames []string) {
 //这是错误的设计,因为用go了之后,直接返回了,最后可能还在执行图像处理,主线程却已经退出了
 /**
 This version runs really fast—too fast, in fact, since it takes less time than the original, even
-when the slice of file names contains only a single element. If there’s no parallelism, how can
+when the slice of file names contains only a single element. If there's no parallelism, how can
 the concurrent version possibly run faster? The answer is that makeThumbnails returns before it
 has finished doing what it was supposed to do. It starts all the goroutines, one per file name, but
-doesn’t wait for them to finish.
+doesn't wait for them to finish.
 */
 func makeThumbnails2(filenames []string) {
 	for _, f := range filenames {
@@ -47,6 +47,7 @@ func makeThumbnails2(filenames []string) {
 //!+3
 // makeThumbnails3 makes thumbnails of the specified files in parallel.
 func makeThumbnails3(filenames []string) {
+	// ch 作用是当一个 goroutine 完成后发送事件通知
 	ch := make(chan struct{})
 	for _, f := range filenames {
 		go func(f string) {
@@ -68,6 +69,7 @@ func makeThumbnails3(filenames []string) {
 //!+4
 // makeThumbnails4 makes thumbnails for the specified files in parallel.
 // It returns an error if any step failed.
+// 错误的设计,如果中间发生err,main goroutine return 退出,剩余未完成的 goroutine 由于 send 卡住造成无法退出.
 func makeThumbnails4(filenames []string) error {
 	errors := make(chan error)
 
@@ -94,11 +96,13 @@ func makeThumbnails4(filenames []string) error {
 // It returns the generated file names in an arbitrary order,
 // or an error if any step failed.
 func makeThumbnails5(filenames []string) (thumbfiles []string, err error) {
+	// 通常定义一个struct来保存单个输入与对应的err
 	type item struct {
 		thumbfile string
 		err       error
 	}
 
+	// 通过 buffer chan 来确保 send 不会被卡住
 	ch := make(chan item, len(filenames))
 	for _, f := range filenames {
 		go func(f string) {
@@ -111,7 +115,7 @@ func makeThumbnails5(filenames []string) (thumbfiles []string, err error) {
 	for range filenames {
 		it := <-ch
 		if it.err != nil {
-			// 注意,这里使用了buffered chan,所以提前返回不会有问题,由于有buffer,不会造成发送方阻塞
+			// 注意,这里使用了buffered chan,所以提前返回不会有问题,由于有buffer,不会造成发送方阻塞,当前还在运行中的goroutine会在send之后正常退出
 			return nil, it.err
 		}
 		thumbfiles = append(thumbfiles, it.thumbfile)
@@ -154,7 +158,7 @@ func makeThumbnails6(filenames <-chan string) int64 {
 	// closer
 	go func() {
 		wg.Wait()
-		// 如果不close,主线程的的range就根本停不下来
+		// 如果不close,主线程的的range(在下方)就根本停不下来
 		close(sizes)
 	}()
 

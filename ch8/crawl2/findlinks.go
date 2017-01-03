@@ -42,6 +42,7 @@ func crawl(url string) []string {
 func main() {
 	worklist := make(chan []string)
 	var n int // number of pending sends to worklist
+	// 此时 n 是 int 的零值, 也就是 0.
 
 	// Start with the command-line arguments.
 	n++

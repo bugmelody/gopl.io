@@ -12,6 +12,18 @@ There are four kinds of goroutine in this program. There is one instance apiece 
 the main and broadcaster goroutines, and for each client connection there is one
 handleConn and one clientWriter goroutine. */
 
+/**
+本程序中存在4中类型的goroutine
+main 							1个
+broadcaster 			1个
+
+对于每个client
+	handleConn			1个
+	clientWriter		1个
+
+也就是说,如果存在n个client,共计会有2n+2个goroutine(包含main goroutine)
+ */
+
 import (
 	"bufio"
 	"fmt"
@@ -21,8 +33,8 @@ import (
 
 //!+broadcaster
 /**
-client类型: server向每个客户端发送消息的管道
-这里使用type定义了类型,实际是在handleConn函数的开始处被创建
+client类型: server向每个客户端发送消息的管道, 对它能只能进行 send 操作
+这里使用type定义了类型,实际是在handleConn函数的开始处被创建(针对每一个客户端).
 在clientWriter中使用 range ch 不停的提取需要发送的客户端的消息并进行发送
 */
 type client chan<- string // an outgoing message channel
@@ -31,7 +43,7 @@ var (
 	/** 这里需要注意
 	entering本身是个管道,而它的element type 是client,也是个管道. client这个管道类型代表server向客户端发送消息的
 	通道,因为针对每个客户端独立创建,所以每个client代表了不同的用户.
-	也就是说,entering代表client这个channel对应的用户已经连接上的消息通道
+	也就是说,entering代表client这个channel对应的用户已经连接上的消息的通道
 	向entering发送消息,表示client对应的用户已经连接 */
 	entering = make(chan client)
 	leaving  = make(chan client)
@@ -49,7 +61,8 @@ message to every connected client. */
 /** broadcaster: Its local variable clients records the current set of connected clients.
 The only information recorded about each client is the identity of its outgoing message channel */
 func broadcaster() {
-	/* 注意: 这里是使用 client 这个channel作为key */
+	/* 注意: 这里是使用 client 这个 channel 作为 key,代表对应的一个客户端 */
+	// clients 被限制只在 broadcaster goroutine 中使用,因此对 clients 这个 map 的访问是安全的.
 	clients := make(map[client]bool) // all connected clients
 	for {
 		select {
@@ -96,9 +109,11 @@ func handleConn(conn net.Conn) {
 	ch <- "You are " + who
 	// 向 messages这个chan发送数据,之后由进入broadcaster的goroutine的广播流程
 	messages <- who + " has arrived"
-	// 将ch发送到entering这个channel,之后由broadcaster进行map添加处理
+	// 将ch发送到entering这个channel,之后由broadcaster进行 clients map 的添加处理
 	entering <- ch
 
+	// bufio.NewScanner 返回的 scanner 默认是用 ScanLines 进行分隔
+	// ScanLines 的源码中, 是以 `\r?\n` 这个正则作为分隔
 	input := bufio.NewScanner(conn)
 	for input.Scan() {
 		// 从客户端收到的文字信息,需要广播给所有人,包括消息来源方的那个客户端
@@ -124,6 +139,7 @@ func clientWriter(conn net.Conn, ch <-chan string) {
 	/* The client writer’s loop terminates when the broadcaster closes the channel
 	after receiving a leaving notification. */
 	for msg := range ch {
+		// for ... range chan 循环停止的唯一条件是 chan 被 close, 并且 chan 中的已发送元素被消耗完
 		// 向client写数据
 		fmt.Fprintln(conn, msg) // NOTE: ignoring network errors
 	}

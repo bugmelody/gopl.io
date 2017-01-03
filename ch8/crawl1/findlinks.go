@@ -7,6 +7,7 @@
 //
 // This version quickly exhausts available file descriptors
 // due to excessive concurrent calls to links.Extract.
+// excessive [ɪk'sesɪv; ek-] adj. 过多的，极度的；过分的
 //
 // Also, it never terminates because the worklist is never closed.
 package main
@@ -38,11 +39,12 @@ func main() {
 
 	// Start with the command-line arguments.
 	// 首先从命令行参数开始抓,因此启动一个 goroutine 将 os.Args[1:] 放到 wroklist
+	// os.Args 的类型为: []string
 	go func() { worklist <- os.Args[1:] }()
 	/**
 	想想,为什么要单独启动一个 goroutine 来初始化要抓取的链接????
 	因为worklist是一个无缓冲的chan,如果没有人接收,发送时会阻塞,解决方案之一就是启动一个新的goroutine专门负责send.
-	另外也可以通过有缓冲的chan来解决
+	解决方案之二通过有缓冲的chan来解决
 	 */
 
 	// Crawl the web concurrently.

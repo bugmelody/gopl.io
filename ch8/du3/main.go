@@ -52,6 +52,7 @@ func main() {
 		go walkDir(root, &n, fileSizes)
 	}
 	go func() {
+		// 等待所有 walkDir goroutine 的结束
 		n.Wait()
 		close(fileSizes)
 	}()
@@ -68,6 +69,7 @@ loop:
 		select {
 		case size, ok := <-fileSizes:
 			if !ok {
+				// 注意, !ok 说明了两个事实: channel was closed and channel was drained
 				break loop // fileSizes was closed
 			}
 			nfiles++
@@ -93,9 +95,6 @@ func printDiskUsage(nfiles, nbytes int64) {
 // and sends the size of each found file on fileSizes.
 //!+walkDir
 func walkDir(dir string, n *sync.WaitGroup, fileSizes chan<- int64) {
-	/** // Done decrements the WaitGroup counter.
-	func (wg *WaitGroup) Done() { */
-
 	defer n.Done()
 	for _, entry := range dirents(dir) {
 		if entry.IsDir() {
@@ -112,6 +111,7 @@ func walkDir(dir string, n *sync.WaitGroup, fileSizes chan<- int64) {
 //!-walkDir
 
 /**
+at its peak: 峰值,在顶峰时期
 Since this program creates many thousands of goroutines at its peak, we have to change
 dirents to use a counting semaphore to prevent it from opening too many files at once
 */

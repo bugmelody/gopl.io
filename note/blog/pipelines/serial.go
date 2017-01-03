@@ -15,18 +15,22 @@ import (
 // from file path to the MD5 sum of the file's contents.  If the directory walk
 // fails or any read operation fails, MD5All returns an error.
 func MD5All(root string) (map[string][md5.Size]byte, error) {
+	// 文件名 => md5
 	m := make(map[string][md5.Size]byte)
 	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error { // HL
 		if err != nil {
 			return err
 		}
 		if !info.Mode().IsRegular() {
+			// 不是常规文件
 			return nil
 		}
 		data, err := ioutil.ReadFile(path) // HL
 		if err != nil {
+			// 读取文件失败
 			return err
 		}
+		// 记录 md5
 		m[path] = md5.Sum(data) // HL
 		return nil
 	})
@@ -46,6 +50,7 @@ func main() {
 	}
 	var paths []string
 	for path := range m {
+		// path是m中的key
 		paths = append(paths, path)
 	}
 	sort.Strings(paths) // HL

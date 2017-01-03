@@ -1,3 +1,127 @@
+p225底部:
+Channels support a third operation(前两个是接收,发送), close, which sets a flag indicating that no more values will
+ever be sent on this channel; subsequent attempts to send will panic. Receive operations on a
+closed channel yield the values that have been sent until no more values are left; any receive
+operations there after complete immediately and yield the zero value of the channel's element type.
+翻译:
+close(ch) 的效果是: 标记 ch 无法再进行发送操作, 之后如果 send 会 panic.
+如果已经调用 close(ch), 在 ch 上进行接收操作会出现两个阶段:
+    1. 对于老早已经 send 的值, 还是会正常接收.
+    2. 当 1 接收完后, 之后的接收操作会立即完成并受到 channel 元素类型对应的零值.
+    
+ 
+p229第1段
+After a channel has been closed, any further send operations on it will panic. After the closed
+channel has been drained, that is, after the last sent element has been received, all subsequent
+receive operations will proceed without blocking but will yield a zero value.
+p229第2段
+There is no way to test directly whether a channel has been closed, but there is a variant of the
+receive operation that produces two results: the received channel element, plus a boolean
+value, conventionally called ok, which is true for a successful receive and false for a receive
+on a closed and drained channel.
+
+// Squarer
+go func() {
+    for {
+        x, ok := <-naturals
+        if !ok {
+            // 注意, !ok 说明了两个事实: channel was closed and channel was drained
+            break // channel was closed and drained
+        }
+        squares <- x * x
+    }
+    close(squares)
+}()
+
+Because the syntax above is clumsy and this pattern is common, the language lets us use a
+range loop to iterate over channel s too. This is a more convenient syntax for receiving all the
+values sent on a channel and terminat ing the loop after the last one.
+
+You needn't close every channel when you've finished with it. It's only necessary to close a
+channel when it is important to tell the receiving goroutines that all data have been sent. A
+channel that the garbage collector determines to be unreachable will have its resources
+reclaimed whether or not it is closed. (Don't confuse this with the close operation for open
+files. It is important to call the Close method on every file when you've finished with it.)
+================================================================================================================================
+for ... range chan 循环停止的唯一条件是 chan 被 close, 并且 chan 中的已发送元素被消耗完
+================================================================================================================================
+p253
+如何确认main退出之后,其他的goroutine也清理完毕并退出了?
+
+Now, when cancellation occurs, all the background goroutines quickly stop and the main function returns.
+Of course, when main returns, a program exits, so it can be hard to tell a main function that cleans up
+after itself from one that does not.
+
+There's a handy trick we can use during testing: if instead of returning from main in the event of cancellation,
+we execute a call to panic, then the runtime will dump the stack of every goroutine in the program. If the main
+goroutine is the only one left, then it has cleaned up after itself. But if other goroutines remain, they may
+not have been properly cancelled, or perhaps they have been cancelled but the cancellation takes time; a little
+investigation may be worthwhile. The panic dump often contains sufficient information to distinguish these cases.
+================================================================================================================================
+
+p245
+
+select {
+    case <-ch1:
+    // ...
+    case x := <-ch2:
+    // ...use x...
+    case ch3 <- y:
+    // ...
+    default:
+    // ...
+}
+
+A select waits until a communication for some case is ready to proceed. It then performs
+that communication and executes the case's associated statements; the other communications
+do not happen. A select with no cases, select{}, waits forever.
+
+The example below is more subtle. The channel ch, whose buffer size is 1, is alternately empty
+then full, so only one of the cases can proceed, either the send when i is even, or the receive
+when i is odd. It always prints 0 2 4 6 8.
+
+ch := make(chan int, 1)
+for i := 0; i < 10; i++ {
+    select {
+    case x := <-ch:
+        fmt.Println(x) // "0" "2" "4" "6" "8"
+    case ch <- i:
+    }
+}
+
+If multiple cases are ready, select picks one at random, which ensures that every channel has an
+equal chance of being selected. Increasing the buffer size of the previous example makes its output
+nondeterministic, because when the buffer is neither full nor empty, the select statement
+figuratively tosses a coin. 
+================================================================================================================================
+p231: Since the close operation asserts that no more sends will occur on a channel, only the sending
+goroutine is in a position to call it, and for this reason it is a compile-time error to attempt
+to close a receive-only channel.
+================================================================================================================================
+经过测试,如果定义了
+package a
+// 非导出
+type point struct{ X, Y int }
+// 非导出
+type circle struct {
+	point
+	Radius int
+}
+// 导出
+type Wheel struct {
+	circle
+	Spokes int
+}
+
+在同一个包 a 内
+var w a.Wheel
+w.X = 8 // 没有问题
+w.circle.point.X = 8 //没有问题
+
+如果在 main 包中导入 a 包
+var w a.Wheel
+w.circle.point.X = 8 // 会报错
+w.X =5 // 没有问题
 ================================================================================================================================
 Go does not require semicolons at the ends of statements or declarations, except where two or
 more appear on the same line. In effect, newlines following certain tokens are converted into
@@ -189,7 +313,7 @@ The second if statement is nested within the first, so variables declared within
 are visible within the second. Similar rules apply to each case of a switch
 statement: there is a block for the condition and a block for each case body.
 ================================================================================================================================
-The behavior of % for negative numbers varies across programming languages. In Go, the sign of the remainder is
+The behavior of % for negative numbers varies across programming languages. In Go, the sign of the remainder(余数) is
 always the same as the sign of the dividend, so -5%3 and -5%-3 are both -2. The behavior of /
 depends on whether its operands are integers, so 5.0/4.0 is 1.25, but 5/4 is 1 because integer
 division truncates the result toward zero.
@@ -798,13 +922,6 @@ func main() {
     fmt.Println(remove(s, 2)) // "[5 6 9 8]
 }
 ================================================================================================================================
-a map element is not a variable, and we cannot take its address:
-
-_ = &ages["bob"] // compile error: cannot take address of map element
-
-One reason that we can't take the address of a map element is that growing a map might cause
-rehashing of existing elements into new storage locations, thus potentially invalidating the address. 
-================================================================================================================================
 The zero value for a map type is nil, that is, a reference to no hash table at all.
 
 var ages map[string]int
@@ -1187,19 +1304,11 @@ func doFile(filename string) error {
   // ...process f...
 }
 ================================================================================================================================
-The deferred call to resp.Body.Close should be familiar by now. It's tempting to use a
-second deferred call, to f.Close, to close the local file, but this would be subtly wrong because
-os.Create opens a file for writing, creating it as needed. On many file systems, notably NFS,
-write errors are not reported immediately but may be postponed until the file is closed. Failure
-to check the result of the close operation could cause serious data loss to go unnoticed(go unnoticed:不被差觉的).
-However, if both io.Copy and f.Close fail, we should prefer to report the error from
-io.Copy since it occurred first and is more likely to tell us the root cause.
-
 gopl.io/ch5/fetch
 ================================================================================================================================
 It's good practice to assert that the preconditions of a function hold, but this can easily be done
 to excess(to excess: 过多,过度). Unless you can provide a more informative error message or detect an error sooner,
-there is no point(there is no point doing做某事没有意义) asserting a condition that the runtime will check for you.
+there is no point(there is no point doing: 做某事没有意义) asserting a condition that the runtime will check for you.
 
 func Reset(x *Buffer) {
   if x == nil {
@@ -1208,7 +1317,7 @@ func Reset(x *Buffer) {
   x.elements = nil
 }
 ================================================================================================================================
-Although Go's panic mechanism resembles exceptions in other languages, the situations in
+Although Go's panic mechanism resembles(vt. 类似，像) exceptions in other languages, the situations in
 which panic is used are quite different. Since a panic causes the program to crash, it is generally
 used for grave(重大的,严重的) errors, such as a logical inconsistency in the
 program; diligent(diligent adj. 勤勉的；用功的，费尽心血的) programmers
@@ -1225,20 +1334,6 @@ Readers familiar with exceptions in other languages may be surprised that runtim
 can print information about functions that seem to have already been "unwound". Go's panic
 mechanism runs the deferred functions before it unwinds the stack.
 gopl.io/ch5/defer2
-================================================================================================================================
-5.10. Recover
-================================================================================================================================
-6.2. Methods with a Pointer Receiver
-================================================================================================================================
-6.2.1. Nil Is a Valid Receiver Value
-================================================================================================================================
-6.3. Composing Types by Struct Embedding
-================================================================================================================================
-6.4. Method Values and Expressions
-================================================================================================================================
-6.5. Example: Bit Vector Type
-================================================================================================================================
-gopl.io/ch7/bytecounter
 ================================================================================================================================
 A type satisfies an interface if it possesses all the methods the interface requires. For example,
 an *os.File satisfies io.Reader, Writer, Closer, and ReadWriter. A *bytes.Buffer satisfies
@@ -1273,6 +1368,7 @@ have a receiver of type T itself whereas others require a *T pointer. Recall als
 call a *T method on an argument of type T so long as the argument is a variable; the compiler
 implicitly takes its address. But this is mere syntactic sugar: a value of type T does not possess
 all the methods that a *T pointer does, and as a result it might satisfy fewer interfaces.
+possess [pə'zes] vt. 控制；使掌握；持有；迷住；拥有，具备
 
 An example will make this clear. The String method of the IntSet type from Section 6.5
 requires a pointer receiver, so we cannot call that method on a non-addressable IntSet value:
@@ -1297,6 +1393,7 @@ between interfaces and concrete types.
 Like an envelope that wraps and conceals the letter it holds, an interface wraps and conceals
 the concrete type and value that it holds. Only the methods revealed by the interface type may
 be called, even if the concrete type has others:
+conceal [kən'siːl] vt. 隐藏；隐瞒
 
 os.Stdout.Write([]byte("hello")) // OK: *os.File has Write method
 os.Stdout.Close() // OK: *os.File has Close method
@@ -1318,14 +1415,10 @@ var w io.Writer = new(bytes.Buffer)
 We needn't allocate a new variable since any value of type *bytes.Buffer will do, even nil,
 which we write as (*bytes.Buffer)(nil) using an explicit conversion. And since we never
 intend to refer to w, we can replace it with the blank identifier. Together, these changes give us
-this more frugal(节俭的；朴素的) variant:
+this more frugal(['fruːg(ə)l] 节俭的；朴素的) variant:
+
 // *bytes.Buffer must satisfy io.Writer
 var _ io.Writer = (*bytes.Buffer)(nil)
-================================================================================================================================
-7.4. Parsing Flags with flag.Value
-7.5. Interface Values
-7.5.1. Caveat: An Interface Containing a Nil Pointer Is Non-Nil
-7.6. Sorting with sort.Interface
 ================================================================================================================================
 gopl.io/ch7/sorting
 
@@ -1357,11 +1450,6 @@ func length(s string) time.Duration {
 其次,[]*Track 每个slice元素应该是一个指针,这里也没有用取地址
 最后,初始化的时候,调用了 length 函数
 ================================================================================================================================
-7.10. Type Assertions
-7.11. Discriminating Errors with Type Assertions
-7.12. Querying Behaviors with Interface Type Assertions
-7.13. Type Switches
-================================================================================================================================
 As with other reference types, the zero value of a channel is nil.
 Two channels of the same type may be compared using ==. The comparison is true if both are
 references to the same channel data structure. A channel may also be compared to nil.
@@ -1378,14 +1466,13 @@ ever be sent on this channel; subsequent attempts to send will panic. Receive op
 closed channel yield the values that have been sent until no more values are left; any receive
 operations thereafter complete immediately and yield the zero value of the channel's element type.
 ================================================================================================================================
-第八章,从 8.4.1. Unbuffered Channels 到结束,都可以多看看
-================================================================================================================================
 gopl.io/ch8/countdown3
 
 The time.Tick function behaves as if it creates a goroutine that calls time.Sleep in a loop,
 sending an event each time it wakes up. When the countdown function above returns, it stops
 receiving events from tick, but the ticker goroutine is still there, trying in vain to send on a
 channel from which no goroutine is receiving—a goroutine leak (§8.4.4).
+in vain 徒然；无效
 
 The Tick function is convenient, but it's appropriate only when the ticks will be needed
 throughout the lifetime of the application. Otherwise, we should use this pattern:
@@ -1423,14 +1510,9 @@ gopl.io/ch9/bank3
 By convention, the variables guarded by a mutex are declared immediately after the declaration of the
 mutex itself. If you deviate from this, be sure to document it.
 ================================================================================================================================
+什么是 critical section ?
 The region of code between Lock and Unlock in which a goroutine is free to read and modify
 the shared variables is called a critical section.
-================================================================================================================================
-gopl.io/ch9/memo1
-gopl.io/ch9/memo2
-gopl.io/ch9/memo3
-gopl.io/ch9/memo4
-gopl.io/ch9/memo5
 ================================================================================================================================
 If we need to import two packages whose names are the same, like math/rand and
 crypto/rand, into a third package, the import declaration must specify an alternative name
@@ -1443,6 +1525,7 @@ import (
 
 The alternative name affects only the importing file. Other files, even ones in the same
 package, may import the package using its default name, or a different name.
+renaming import 造成的影响只限于当前正在进行 importing 的文件.
 
 A renaming import may be useful even when there is no conflict. If the name of the imported
 package is unwieldy, as is sometimes the case for automatically generated code, an abbreviated
@@ -1450,6 +1533,7 @@ name may be more convenient. The same short name should be used consistently to 
 confusion. Choosing an alternative name can help avoid conflicts with common local variable
 names. For example, in a file with many local variables named path, we might import the
 standard "path" package as pathpkg.
+unwieldy [ʌn'wiːldɪ] adj. 笨拙的；笨重的；不灵便的；难处理的
 ================================================================================================================================
 The go get command has support for popular code-hosting sites like GitHub, Bitbucket, and
 Launchpad and can make the appropriate requests to their version-control systems. For less
@@ -1468,6 +1552,7 @@ changing those packages's import paths, so our copy of golang.org/x/net/html wou
 become gopl.io/vendor/golang.org/x/net/html. More recent versions of the go tool
 support vendoring directly, though we don't have space to show the details here. See Vendor
 Directories in the output of the go help gopath command.
+hygiene ['haɪdʒiːn] n. 卫生；卫生学；保健法
 ================================================================================================================================
 For convenience, go build -i installs the packages that are dependencies of the build target.
 ================================================================================================================================
@@ -1483,21 +1568,13 @@ func (dec *Decoder) Decode(v interface{}) error
 Decode reads the next JSON-encoded value from its input and stores it in the value pointed to by v.
 
 $ godoc -analysis=type,pointer -http :8000
-
-================================================================================================================================
-10.7.5. Internal Packages
-10.7.6. Querying Packages
-================================================================================================================================
-11.2.4. External Test Packages
-================================================================================================================================
-p329   12章 反射
 ================================================================================================================================
 fmt.Println(os.Args[1:]) // Println 可用于调试 slice
 ================================================================================================================================
 printf 的常用 verb
-%d decimal integer
-%x, %o, %b integer in hexade cimal, octal, binary
-%f, %g, %e floating-p oint number: 3.141593 3.141592653589793 3.141593e+00
+%d decimal integer [十进制整数]
+%x, %o, %b integer in hexadecimal, octal, binary [十六进制,八进制,二进制整数]
+%f, %g, %e floating point number: 3.141593 3.141592653589793 3.141593e+00
 %t boolean: true or false
 %c rune (Unicode code point)
 %s string
@@ -1508,10 +1585,10 @@ printf 的常用 verb
 ================================================================================================================================
 By convention, formatting functions whose names end in f, such as
 log.Printf and fmt.Errorf, use the formatting rules of fmt.Printf, whereas those whose
-names end in ln follow Println, formatting their arguments as if by %v, follow ed by a newline.
+names end in ln follow Println, formatting their arguments as if by %v, followed by a newline.
 ================================================================================================================================
 When a map is passed to a function, the function receives a copy of the reference, so any changes the called function makes to
-the underlying datastructure will be visible through the caller’s map reference too.
+the underlying data structure will be visible through the caller's map reference too.
 ================================================================================================================================
 One subtle but important point: a short variable declaration does not necessarily declare all the
 variables on its left-hand side. If some of them were already declared in the same lexical block
@@ -1530,123 +1607,32 @@ f, err := os.Create(outfile) // compile error: no new variables
 The fix is to use an ordinary assignment for the second statement.
 
 A short variable declaration acts like an assignment only to variables that were already
-declared in the same lexical block; declarations in an outer block are ignored. 
-================================================================================================================================
-The behavior of % for negative numbers varies across programming languages. In Go, the sign of the remainder is
-always the same as the sign of the dividend(被除数), so -5%3 and -5%-3 are both -2. The behavior of /
-depends on whether its operands are integers, so 5.0/4.0 is 1.25, but 5/4 is 1 because integer
-division truncates the result toward zero.
-================================================================================================================================
-If the result of an arithmetic operation, whether signed or unsigned, has more bits than can be represented in the
-result type, it is said to overflow. The high-order bits that do not fit are silently discarded. If the original
-number is a signed type, the result could be negative if the leftmost bit is a 1, as in the int8 example here:
-
-var u uint8 = 255
-fmt.Println(u, u+1, u*u) // "255 0 1"
-
-var i int8 = 127
-fmt.Println(i, i+1, i*i) // "127 -128 1"
-================================================================================================================================
-^ 	bitwise XOR
-&^ 	bit clear (AND NOT)
-
-The operator ^ is bitwise exclusive OR (XOR) when used as a binary operator, but when used as a unary prefix
-operator it is bitwise negation or complement; that is, it returns a value with each bit in its operand inverted.
-The &^ operator is bit clear (AND NOT): in the expression z = x &^ y, each bit of z is 0 if the corresponding
-bit of y is 1; otherwise it equals the corresponding bit of x.
- 
-The code below shows how bitwise operations can be used to interpret a uint8 value as a compact and efficient
-set of 8 independent bits. It uses Printf’s %b verb to print a number’s binary digits; 08 modifies %b (an adverb!) to
-pad the result with zeros to exactly 8 digits.
-
-
-var x uint8 = 1<<1 | 1<<5
-var y uint8 = 1<<1 | 1<<2
-
-fmt.Printf("%08b\n", x)    // "00100010", the set {1, 5}
-fmt.Printf("%08b\n", y)    // "00000110", the set {1, 2}
-
-fmt.Printf("%08b\n", x&y)  // "00000010", the intersection {1}
-fmt.Printf("%08b\n", x|y)  // "00100110", the union {1, 2, 5}
-fmt.Printf("%08b\n", x^y)  // "00100100", the symmetric difference {2, 5}
-fmt.Printf("%08b\n", x&^y) // "00100000", the difference {5}
-
-for i := uint(0); i < 8; i++ {
-    if x&(1<<i) != 0 { // membership test
-        fmt.Println(i) // "1", "5"
-    }
-}
-
-fmt.Printf("%08b\n", x<<1) // "01000100", the set {2, 6}
-fmt.Printf("%08b\n", x>>1) // "00010001", the set {0, 4}
-================================================================================================================================
-o := 0666
-fmt.Printf("%d %[1]o %#[1]o\n", o) // "438 666 0666"
-x := int64(0xdeadbeef)
-fmt.Printf("%d %[1]x %#[1]x %#[1]X\n", x)
-// Output:
-// 3735928559 deadbeef 0xdeadbeef 0XDEADBEEF
-
-Note the use of two fmt tricks. Usually a Printf format string containing multiple % verbs would require the same
-number of extra operands, but the [1] “adverbs” after % tell Printf to use the first operand over and over again.
-Second, the # adverb for %o or %x or %X tells Printf to emit a 0 or 0x or 0X prefix respectively. 
-================================================================================================================================
- Rune literals are written as a character within single quotes. The simplest example is an ASCII character like 'a', but it’s possible to write any Unicode code point either directly or with numeric escapes, as we will see shortly.
-
-Runes are printed with %c, or with %q if quoting is desired:
-
-ascii := 'a'
-unicode := '国'
-newline := '\n'
-fmt.Printf("%d %[1]c %[1]q\n", ascii)   // "97 a 'a'"
-fmt.Printf("%d %[1]c %[1]q\n", unicode) // "22269 国 '国'"
-fmt.Printf("%d %[1]q\n", newline)       // "10 '\n'"
-================================================================================================================================
-A float32 provides approximately six decimal digits of precision, whereas a float64 provides about 15 digits; float64
-should be preferred for most purposes because float32 computations accumulate error rapidly unless one is quite
-careful, and the smallest positive integer that cannot be exactly represented as a float32 is not large:
-
-var f float32 = 16777216 // 1 << 24
-fmt.Println(f == f+1)    // "true"!
-================================================================================================================================
-p57
-Floating-point values are conveniently printed with Printf’s %g verb, which chooses the most compact representation that has adequate precision, but for tables of data, the %e (exponent) or %f (no exponent) forms may be more appropriate. All three verbs allow field width and numeric precision to be controlled.
-
-for x := 0; x < 8; x++ {
-    fmt.Printf("x = %d ex = %8.3f\n", x, math.Exp(float64(x)))
-}
-
-The code above prints the powers of e with three decimal digits of precision, aligned in an eight-character field:
-
-x = 0   ex =    1.000
-x = 1   ex =    2.718
-x = 2   ex =    7.389
-x = 3   ex =   20.086
-x = 4   ex =   54.598
-x = 5   ex =  148.413
-x = 6   ex =  403.429
-x = 7   ex = 1096.633
+declared in the same lexical block; declarations in an outer block are ignored(注意,外层block中的声明会被忽略). 
 ================================================================================================================================
 Map elements are accessed through the usual subscript notation:
   ages["alice"] = 32
   fmt.Println(ages["alice"]) // "32"
 and removed with the built-in function delete:
   delete(ages, "alice") // remove element ages["alice"]
-All of these operations are safe even if the element isn’t in the map; a map lookup using a key
-that isn’t present returns the zero value for its type, so, for instance, the following works even
+  
+All of these operations are safe even if the element isn't in the map; a map lookup using a key
+that isn't present returns the zero value for its type, so, for instance, the following works even
 when "bob" is not yet a key in the map because the value of ages["bob"] will be 0.
   ages["bob"] = ages["bob"] + 1 // happy birthday!
+  
 The shorthand assignment forms x += y and x++ also work for map elements, so we can rewrite the statement above as
   ages["bob"] += 1
-or evenmore concisely as
+or even more concisely as
   ages["bob"]++
+
 But a map element is not a variable, and we cannot take its address:
   _ = &ages["bob"] // compile error: cannot take address of map element
-One reason that we can’t take the address of a map element is that growing a map might cause
+  
+One reason that we can't take the address of a map element is that growing a map might cause
 rehashing of existing elements into new storage locations, thus potentially invalidating the address.
 ================================================================================================================================
 In a realistic program, convention dictates that if any method of Point has a pointer receiver,
-then all methods of Point should have a pointer receiver, even ones that don’t strictly need it.
+then all methods of Point should have a pointer receiver, even ones that don't strictly need it.
 ================================================================================================================================
 Named types (Point) and pointers to them (*Point) are the only types that may appear in a
 receiver declaration. Furthermore, to avoid ambiguities, method declarations are not permitted
@@ -1654,13 +1640,14 @@ on named types that are themselves pointer types:
 type P *int
 func (P) f() { /* ... */ } // compile error: invalid receiver type
 ================================================================================================================================
-Usually we select and call a method in the same expression, as in p.Distance(), but it’s possible to separate these two operations. The selector p.Distance yields a method value, a function that binds a method (Point.Distance) to a specific receiver value p. This function can then be invoked without a receiver value; it needs only the non-receiver arguments.
-
+Usually we select and call a method in the same expression, as in p.Distance(), but it's possible to separate these two
+operations. The selector p.Distance yields a method value, a function that binds a method (Point.Distance) to a specific
+receiver value p. This function can then be invoked without a receiver value; it needs only the non-receiver arguments.
 
 p := Point{1, 2}
 q := Point{4, 6}
 
-distanceFromP := p.Distance        // method value
+distanceFromP := p.Distance        // method value, receiver 已经被绑定, 调用的时候只需要提供 non-receiver arguments.
 fmt.Println(distanceFromP(q))      // "5"
 var origin Point                   // {0, 0}
 fmt.Println(distanceFromP(origin)) // "2.23606797749979", √5
@@ -1670,21 +1657,28 @@ scaleP(2)           // p becomes (2, 4)
 scaleP(3)           //      then (6, 12)
 scaleP(10)          //      then (60, 120)
 
-Method values are useful when a package’s API calls for a function value, and the client’s desired behavior for that function is to call a method on a specific receiver. For example, the function time.AfterFunc calls a function value after a specified delay. This program uses it to launch the rocket r after 10 seconds:
+Method values are useful when a package's API calls for a function value, and the client's desired behavior for that
+function is to call a method on a specific receiver. For example, the function time.AfterFunc calls a function value
+after a specified delay. This program uses it to launch the rocket r after 10 seconds:
 
+// 火箭
 type Rocket struct { /* ... */ }
+// 发射火箭
 func (r *Rocket) Launch() { /* ... */ }
 
 r := new(Rocket)
+// 10秒后发射, 通过匿名函数
 time.AfterFunc(10 * time.Second, func() { r.Launch() })
 
 The method value syntax is shorter:
 
-Click here to view code image
-
+// 10秒后发射, 通过 method value
 time.AfterFunc(10 * time.Second, r.Launch)
 ================================================================================================================================
-Related to the method value is the method expression. When calling a method, as opposed to an ordinary function, we must supply the receiver in a special way using the selector syntax. A method expression, written T.f or (*T).f where T is a type, yields a function value with a regular first parameter taking the place of the receiver, so it can be called in the usual way.
+Related to the method value is the method expression. When calling a method, as opposed to an ordinary function, we
+must supply the receiver in a special way using the selector syntax. A method expression, written T.f or (*T).f where
+T is a type, yields a function value with a regular first parameter taking the place of the receiver, so it can be
+called in the usual way.
 
 p := Point{1, 2}
 q := Point{4, 6}
@@ -1698,7 +1692,10 @@ scale(&p, 2)
 fmt.Println(p)            // "{2 4}"
 fmt.Printf("%T\n", scale) // "func(*Point, float64)"
 
-Method expressions can be helpful when you need a value to represent a choice among several methods belonging to the same type so that you can call the chosen method with many different receivers. In the following example, the variable op represents either the addition or the subtraction method of type Point, and Path.TranslateBy calls it for each point in the Path:
+Method expressions can be helpful when you need a value to represent a choice among several methods belonging to the
+same type so that you can call the chosen method with many different receivers. In the following example, the variable
+op represents either the addition or the subtraction method of type Point, and Path.TranslateBy calls it for each point
+in the Path:
 
 type Point struct{ X, Y float64 }
 
@@ -1710,9 +1707,9 @@ type Path []Point
 func (path Path) TranslateBy(offset Point, add bool) {
     var op func(p, q Point) Point
     if add {
-        op = Point.Add
+        op = Point.Add // 生成 method expression
     } else {
-        op = Point.Sub
+        op = Point.Sub // 生成 method expression
     }
     for i := range path {
         // Call either path[i].Add(offset) or path[i].Sub(offset).
@@ -1720,62 +1717,23 @@ func (path Path) TranslateBy(offset Point, add bool) {
     }
 }
 ================================================================================================================================
-6.5. Example: Bit Vector Type
-================================================================================================================================
-The assignability rule for interfaces is very simple: an expression may be assigned to
-an interface only if its type satisfies the interface. So:
+Interface values may be compared using == and !=. Two interface values are equal if both are nil, or if their
+dynamic types are identical and their dynamic values are equal according to the usual behavior of == for that
+type. Because interface values are comparable, they may be used as the keys of a map or as the operand of a switch statement.
 
-var w io.Writer
-w = os.Stdout // OK: *os.File has Write method
-w = new(bytes.Buffer) // OK: *bytes.Buffer has Write method
-w = time.Second // compile error: time.Duration lacks Write method
-
-var rwc io.ReadWriteCloser
-rwc = os.Stdout // OK: *os.File has Read, Write, Close methods
-rwc = new(bytes.Buffer) // compile error: *bytes.Buffer lacks Close method
-
-This rule applies even when the right-hand side is itself an interface:
-
-w = rwc // OK: io.ReadWriteCloser has Write method
-rwc = w // compile error: io.Writer lacks Close method
-================================================================================================================================
-Like an envelope that wraps and conceals the letter it holds, an interface wraps and conceals
-the concrete type and value that it holds. Only the methods revealed by the interface type may
-be called, even if the concrete type has others:
-
-os.Stdout.Write([]byte("hello")) // OK: *os.File has Write method
-os.Stdout.Close() // OK: *os.File has Close method
-
-var w io.Writer
-w = os.Stdout
-
-w.Write([]byte("hello")) // OK: io.Writer has Write method
-w.Close() // compile error: io.Writer lacks Close method
-================================================================================================================================
-Since interface satisfaction depends only on the methods of the two types involved, there is no need to declare the relationship between a concrete type and the interfaces it satisfies. That said, it is occasionally useful to document and assert the relationship when it is intended but not otherwise enforced by the program. The declaration below asserts at compile time that a value of type *bytes.Buffer satisfies io.Writer:
-
-// *bytes.Buffer must satisfy io.Writer
-var w io.Writer = new(bytes.Buffer)
-
-frugal   ['fru:ɡəl] adj.
-1.节俭的，节约的，俭朴的
-2.不昂贵的，廉价的；不豪华的；不充足的
-
-We needn’t allocate a new variable since any value of type *bytes.Buffer will do, even nil, which we write as (*bytes.Buffer)(nil) using an explicit conversion. And since we never intend to refer to w, we can replace it with the blank identifier. Together, these changes give us this more frugal variant:
-
-// *bytes.Buffer must satisfy io.Writer
-var _ io.Writer = (*bytes.Buffer)(nil)
-================================================================================================================================
-Interface values may be compared using == and !=. Two interface values are equal if both are nil, or if their dynamic types are identical and their dynamic values are equal according to the usual behavior of == for that type. Because interface values are comparable, they may be used as the keys of a map or as the operand of a switch statement.
-
-However, if two interface values are compared and have the same dynamic type, but that type is not comparable (a slice, for instance), then the comparison fails with a panic:
+However, if two interface values are compared and have the same dynamic type, but that type is not
+comparable (a slice, for instance), then the comparison fails with a panic:
 
 var x interface{} = []int{1, 2, 3}
 fmt.Println(x == x) // panic: comparing uncomparable type []int
 
-In this respect, interface types are unusual. Other types are either safely comparable (like basic types and pointers) or not comparable at all (like slices, maps, and functions), but when comparing interface values or aggregate types that contain interface values, we must be aware of the potential for a panic. A similar risk exists when using interfaces as map keys or switch operands. Only compare interface values if you are certain that they contain dynamic values of comparable types.
+In this respect, interface types are unusual. Other types are either safely comparable (like basic types and pointers) or
+not comparable at all (like slices, maps, and functions), but when comparing interface values or aggregate types that contain
+interface values, we must be aware of the potential for a panic. A similar risk exists when using interfaces as map keys or
+switch operands. Only compare interface values if you are certain that they contain dynamic values of comparable types.
 
-When handling errors, or during debugging, it is often helpful to report the dynamic type of an interface value. For that, we use the fmt package’s %T verb:
+When handling errors, or during debugging, it is often helpful to report the dynamic type of an interface value. For
+that, we use the fmt package's %T verb:
 
 var w io.Writer
 fmt.Printf("%T\n", w) // "<nil>"
@@ -1786,21 +1744,56 @@ fmt.Printf("%T\n", w) // "*os.File"
 w = new(bytes.Buffer)
 fmt.Printf("%T\n", w) // "*bytes.Buffer"
 
-Internally, fmt uses reflection to obtain the name of the interface’s dynamic type.
+Internally, fmt uses reflection to obtain the name of the interface's dynamic type.
 ================================================================================================================================
-================================================================================================================================
-p104 4.4.3. Struct Embedding and Anonymous Fields
+4.4.3. Struct Embedding and Anonymous Fields (p104) [2016-12-26 21:59:21]
+5.10. Recover
 p140 : 5.6.1. Caveat: Capturing Iteration Variables
-7.5.1. Caveat: An Interface Containing a Nil Pointer IsNon-Nil
+6.2. Methods with a Pointer Receiver
+6.2.1. Nil Is a Valid Receiver Value
+6.3. Composing Types by Struct Embedding
+6.4. Method Values and Expressions
+6.5. Example: Bit Vector Type
+7.4. Parsing Flags with flag.Value
+7.5. Interface Values
+7.5.1. Caveat: An Interface Containing a Nil Pointer Is Non-Nil
+7.6. Sorting with sort.Interface
+7.10. Type Assertions
+7.11. Discriminating Errors with Type Assertions
+7.12. Querying Behaviors with Interface Type Assertions
+7.13. Type Switches
+第八章
+第九章
+
+
+
+
+
+gopl.io/ch9/memo1
+gopl.io/ch9/memo2
+gopl.io/ch9/memo3
+gopl.io/ch9/memo4
+gopl.io/ch9/memo5
+
+
+10.7.5. Internal Packages
+10.7.6. Querying Packages
+11.2.4. External Test Packages
 p341 12.5 Setting Variables with reflect.Value
 p344 12.6. Example: Decoding S-Expressions
 p348 12.7. Accessing Struct Field Tags
+p329   12章 反射 都可以多看看
 12.8. Displaying the Methods of a Type
-
-================================================================================================================================
-
 ================================================================================================================================
 ch12/sexpr
+================================================================================================================================
+gopl.io/ch7/bytecounter
+================================================================================================================================
+================================================================================================================================
+================================================================================================================================
+================================================================================================================================
+================================================================================================================================
+================================================================================================================================
 ================================================================================================================================
 ================================================================================================================================
 ================================================================================================================================

@@ -18,7 +18,7 @@ import (
 // walk on the error channel.  If done is closed, walkFiles abandons its work.
 func walkFiles(done <-chan struct{}, root string) (<-chan string, <-chan error) {
 	paths := make(chan string)
-	errc := make(chan error, 1)
+	errc := make(chan error, 1) // 缓冲为 1
 	go func() { // HL
 		// Close the paths channel after Walk returns.
 		defer close(paths) // HL
@@ -32,7 +32,9 @@ func walkFiles(done <-chan struct{}, root string) (<-chan string, <-chan error) 
 			}
 			select {
 			case paths <- path: // HL
+				// 非阻塞 send 操作
 			case <-done: // HL
+				// 非阻塞 receive 操作
 				return errors.New("walk canceled")
 			}
 			return nil
@@ -51,10 +53,13 @@ type result struct {
 // digester reads path names from paths and sends digests of the corresponding
 // files on c until either paths or done is closed.
 func digester(done <-chan struct{}, paths <-chan string, c chan<- result) {
+	// 当 paths 这个 channel 被 close 的时候,循环会自动退出
 	for path := range paths { // HLpaths
 		data, err := ioutil.ReadFile(path)
 		select {
 		case c <- result{path, md5.Sum(data), err}:
+			// 非阻塞 send 操作
+			// send digest 出来的 md5 结果到 c
 		case <-done:
 			return
 		}
@@ -86,6 +91,7 @@ func MD5All(root string) (map[string][md5.Size]byte, error) {
 	}
 	go func() {
 		wg.Wait()
+		// 标记不会再有 result 发送
 		close(c) // HLc
 	}()
 	// End of pipeline. OMIT
@@ -93,8 +99,10 @@ func MD5All(root string) (map[string][md5.Size]byte, error) {
 	m := make(map[string][md5.Size]byte)
 	for r := range c {
 		if r.err != nil {
+			// range 从 channel 中接收到的 result 的 err 字段出错了
 			return nil, r.err
 		}
+		// range 从 channel 中接收到的 result 的 err 字段没有出错
 		m[r.path] = r.sum
 	}
 	// Check whether the Walk failed.

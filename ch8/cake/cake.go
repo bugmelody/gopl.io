@@ -21,15 +21,19 @@ type Shop struct {
 	Cakes          int           // number of cakes to bake
 	BakeTime       time.Duration // time to bake one cake
 	BakeStdDev     time.Duration // standard deviation of baking time
+	// baking and icing 之间 chan 的缓冲区长度
 	BakeBuf        int           // buffer slots between baking and icing
+	// 多少个进行 ice 的厨师
 	NumIcers       int           // number of cooks doing icing
 	IceTime        time.Duration // time to ice one cake
 	IceStdDev      time.Duration // standard deviation of icing time
+	// icing and inscribing 之间 chan 的缓冲区长度
 	IceBuf         int           // buffer slots between icing and inscribing
 	InscribeTime   time.Duration // time to inscribe one cake
 	InscribeStdDev time.Duration // standard deviation of inscribing time
 }
 
+// cake 代表一个蛋糕, 底层的整数是对应的标识
 type cake int
 
 func (s *Shop) baker(baked chan<- cake) {
@@ -39,12 +43,16 @@ func (s *Shop) baker(baked chan<- cake) {
 			fmt.Println("baking", c)
 		}
 		work(s.BakeTime, s.BakeStdDev)
+		// 蛋糕 bake 完毕,送入 baked 这个 channel
 		baked <- c
 	}
+	// 所有蛋糕 bake 完毕, 关闭 baked 这个 channel
 	close(baked)
 }
 
 func (s *Shop) icer(iced chan<- cake, baked <-chan cake) {
+	// 上面 baker 函数中, 蛋糕在 bake 完了之后, 会关闭 baked channel
+	// baked chan 被关闭后,下面这个 range 循环会终止
 	for c := range baked {
 		if s.Verbose {
 			fmt.Println("icing", c)
@@ -52,6 +60,7 @@ func (s *Shop) icer(iced chan<- cake, baked <-chan cake) {
 		work(s.IceTime, s.IceStdDev)
 		iced <- c
 	}
+	// 没有必要 close iced 这个 chan, 因为在 inscriber 是通过 s.Cakes 确定的接收次数
 }
 
 func (s *Shop) inscriber(iced <-chan cake) {

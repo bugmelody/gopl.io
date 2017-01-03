@@ -38,6 +38,7 @@ func BenchmarkBuffers(b *testing.B) {
 func BenchmarkVariable(b *testing.B) {
 	// Adding variability to rate of each step
 	// increases total time due to channel delays.
+	// 由于每个阶段worker的工作时间不固定,导致阶段之间衔接会有问题
 	cakeshop := defaults
 	cakeshop.BakeStdDev = cakeshop.BakeTime / 4
 	cakeshop.IceStdDev = cakeshop.IceTime / 4
@@ -48,6 +49,7 @@ func BenchmarkVariable(b *testing.B) {
 func BenchmarkVariableBuffers(b *testing.B) {
 	// Adding channel buffers reduces
 	// delays resulting from variability.
+	// 增加buffer之后,擦出了阶段之间衔接的影响
 	cakeshop := defaults
 	cakeshop.BakeStdDev = cakeshop.BakeTime / 4
 	cakeshop.IceStdDev = cakeshop.IceTime / 4
@@ -68,6 +70,9 @@ func BenchmarkSlowIcing(b *testing.B) {
 func BenchmarkSlowIcingManyIcers(b *testing.B) {
 	// Adding more icing cooks reduces the cost of icing
 	// to its sequential component, following Amdahl's Law.
+	// 增加icing厨师,提高明显
+	// 但根据阿姆达尔定律,优化帮助是有上限的.
+	
 	/**
 	Amdahl's law: http://blog.sina.com.cn/s/blog_4c689fd90100cx4b.html
 	Amdahl’s law (阿姆达尔定律)的演化和思考: http://blog.csdn.net/yutianzuijin/article/details/8489555

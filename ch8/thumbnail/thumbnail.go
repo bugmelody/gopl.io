@@ -20,6 +20,7 @@ import (
 // Image returns a thumbnail-size version of src.
 func Image(src image.Image) image.Image {
 	// Compute thumbnail size, preserving aspect ratio.
+	// aspect ratio 纵横比；屏幕高宽比
 	xs := src.Bounds().Size().X
 	ys := src.Bounds().Size().Y
 	width, height := 128, 128

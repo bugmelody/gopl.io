@@ -8,7 +8,9 @@ package bank
 
 //!+
 var (
+	// A semaphore that counts only to 1 is called a binary semaphore.
 	sema    = make(chan struct{}, 1) // a binary semaphore guarding balance
+	// 余额
 	balance int
 )
 

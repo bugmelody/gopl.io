@@ -19,6 +19,7 @@ func main() {
 			naturals <- x
 		}
 		// In a more complex program, it might make sense for the counter and squarer functions to defer the calls to close at the outset
+		// at the outset: 开始；起初
 		close(naturals)
 	}()
 
@@ -29,6 +30,7 @@ func main() {
 			squares <- x * x
 		}
 		// In a more complex program, it might make sense for the counter and squarer functions to defer the calls to close at the outset
+		// at the outset: 开始；起初
 		close(squares)
 	}()
 
@@ -40,3 +42,11 @@ func main() {
 }
 
 //!-
+
+/**
+You needn't close every channel when you've finished with it. It's only necessary to close a
+channel when it is important to tell the receiving goroutines that all data have been sent. A
+channel that the garbage collector determines to be unreachable will have its resources
+reclaimed whether or not it is closed. (Don't confuse this with the close operation for open
+files. It is important to call the Close method on every file when you've finished with it.)
+ */

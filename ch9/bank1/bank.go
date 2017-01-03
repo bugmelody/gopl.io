@@ -7,6 +7,18 @@
 /**
 Here’s the bank example rewritten with the balance variable confined to a monitor goroutine called teller:
  */
+/**
+teller ['telə] n.
+1.讲述者，叙述者，讲故事者
+2.记数者；计票员，点票员
+3.[美国英语](银行等的)出纳员
+
+bank tellern. 银行行员
+automatic teller自动出纳机
+fortune teller算命先生；预言家
+automatic teller machine自动取款机；自动柜员机
+automated teller machine自动柜员机
+ */
 
 // Package bank provides a concurrency-safe bank with one account.
 package bank

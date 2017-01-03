@@ -67,6 +67,7 @@ loop:
 		select {
 		case size, ok := <-fileSizes:
 			if !ok {
+				// 注意, !ok 说明了两个事实: channel was closed and channel was drained
 				break loop // fileSizes was closed
 			}
 			nfiles++

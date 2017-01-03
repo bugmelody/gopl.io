@@ -14,8 +14,12 @@ import (
 //!+
 func main() {
 	fmt.Println("Commencing countdown.")
+	
+	// ### func Tick(d Duration) <-chan Time {
 	tick := time.Tick(1 * time.Second)
+	// 每隔 1s 会从 tick 这个 channel 收到时间信号
 	for countdown := 10; countdown > 0; countdown-- {
+		// 每隔 1s 输出倒计时
 		fmt.Println(countdown)
 		<-tick
 	}
