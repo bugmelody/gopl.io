@@ -1,4 +1,6 @@
 http://localhost:8080/blog/json-and-go
+[[[2-over]]] 2017-01-24 15:45:01
+
 JSON and Go
 
 25 January 2011
@@ -120,7 +122,6 @@ fmt.Println("the circle's area", math.Pi*r*r)
 
 Or, if the underlying type is unknown, a type switch determines the type:
 
-
 switch v := i.(type) {
 case int:
     fmt.Println("twice i is", v*2)
@@ -192,7 +193,7 @@ In this way you can work with unknown JSON data while still enjoying the benefit
 
 
 
-
+=======================================================================
 Reference Types
 
 Let's define a Go type to contain the data from the previous example:
@@ -203,8 +204,8 @@ type FamilyMember struct {
     Parents []string
 }
 
-    var m FamilyMember
-    err := json.Unmarshal(b, &m)
+var m FamilyMember
+err := json.Unmarshal(b, &m)
 
 Unmarshaling that data into a FamilyMember value works as expected, but if we look closely we can see a remarkable thing has happened. With the var statement we allocated a FamilyMember struct, and then provided a pointer to that value to Unmarshal, but at that time the Parents field was a nil slice value. To populate the Parents field, Unmarshal allocated a new slice behind the scenes. This is typical of how Unmarshal works with the supported reference types (pointers, slices, and maps).
 
@@ -225,7 +226,7 @@ type IncomingMessage struct {
 
 and the sending party can populate the Cmd field and/or the Msg field of the top-level JSON object, depending on the type of message they want to communicate. Unmarshal, when decoding the JSON into an IncomingMessage struct, will only allocate the data structures present in the JSON data. To know which messages to process, the programmer need simply test that either Cmd or Msg is not nil.
 
-
+=======================================================================
 Streaming Encoders and Decoders
 
 The json package provides Decoder and Encoder types to support the common operation of reading and writing streams of JSON data. The NewDecoder and NewEncoder functions wrap the io.Reader and io.Writer interface types.

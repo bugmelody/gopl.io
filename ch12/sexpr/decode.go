@@ -66,8 +66,8 @@ variable referred to by the addressable reflect.Value v.
 */
 
 // The read function is a decoder for a small subset of well-formed
-// S-expressions.  For brevity of our example, it takes many dubious
-// shortcuts.
+// S-expressions.  For brevity of our example, it takes many dubious shortcuts.
+// ubious ['djuːbɪəs] adj. 可疑的；暧昧的；无把握的；半信半疑的
 //
 // The parser assumes
 // - that the S-expression input is well-formed; it does no error checking.

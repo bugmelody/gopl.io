@@ -22,6 +22,12 @@ var (
 
 var out io.Writer = os.Stdout // modified during testing
 
+/**
+ Notice that the test code is in the same package as the production code.
+ Although the package name is main and it defines a main function, during
+ testing this package acts as a library that exposes the function TestEcho
+ to the test driver; its main function is ignored. 
+ */
 func main() {
 	flag.Parse()
 	if err := echo(!*n, *s, flag.Args()); err != nil {

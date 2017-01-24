@@ -39,6 +39,8 @@ func (memo *Memo) Get(key string) (value interface{}, err error) {
 	memo.mu.Lock()
 	e := memo.cache[key]
 	if e == nil {
+		// *entry 是指针, 指针的 zero value 是 nil
+		
 		// This is the first request for this key.
 		// This goroutine becomes responsible for computing
 		// the value and broadcasting the ready condition.

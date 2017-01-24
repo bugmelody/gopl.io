@@ -18,6 +18,9 @@ func Test(t *testing.T) {
 	var d time.Duration = 1 * time.Nanosecond
 	fmt.Println(format.Any(x))                  // "1"
 	fmt.Println(format.Any(d))                  // "1"
+	// since Kind is concerned only with the underlying representation, format.Any works for named types too
+	// since Kind is concerned only with the underlying representation, format.Any works for named types too
+	// since Kind is concerned only with the underlying representation, format.Any works for named types too
 	fmt.Println(format.Any([]int64{x}))         // "[]int64 0x8202b87b0"
 	fmt.Println(format.Any([]time.Duration{d})) // "[]time.Duration 0x8202b87e0"
 	//!-time

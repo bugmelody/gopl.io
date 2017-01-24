@@ -35,6 +35,8 @@ func New(f Func) *Memo {
 func (memo *Memo) Get(key string) (interface{}, error) {
 	res, ok := memo.cache[key]
 	if !ok {
+		// 如果 map 中不存在 key, 调用函数
+		// 此时, res 是 zero value
 		res.value, res.err = memo.f(key)
 		memo.cache[key] = res
 	}
@@ -42,3 +44,8 @@ func (memo *Memo) Get(key string) (interface{}, error) {
 }
 
 //!-
+
+
+/**
+由于本package的 Memo.Get 的设计不是并发安全,因此引发了memo2的修改
+ */

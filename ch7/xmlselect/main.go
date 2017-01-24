@@ -40,6 +40,8 @@ func main() {
 }
 
 // containsAll reports whether x contains the elements of y, in order.
+// 比如 x = [1,2,3,4,5], y=[3,4]
+// containsAll 会检查 x 中是否包含 [3,4] 
 func containsAll(x, y []string) bool {
 	for len(y) <= len(x) {
 		if len(y) == 0 {

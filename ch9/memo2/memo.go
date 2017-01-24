@@ -7,6 +7,13 @@
 // type Func.  Concurrent requests are serialized by a Mutex.
 package memo
 
+/**
+ The simplest way to make the cache concurrency-safe is to use monitor-based
+ synchronization. All we need to do is add a mutex to the Memo, acquire the
+ mutex lock at the start of Get, and release it before Get returns, so that
+ the two cache operations occur within the critical section: 
+ */
+
 import "sync"
 
 // Func is the type of the function to memoize.
@@ -42,3 +49,12 @@ func (memo *Memo) Get(key string) (value interface{}, err error) {
 }
 
 //!-
+
+
+/**
+ Now the race detector is silent, even when running the tests concurrently. Unfortunately
+ this change to Memo reverses our earlier performance gains. By holding the lock for the
+ duration of each call to f, Get serializes all the I/O operations we intended to parallelize.
+ What we need is a non-blocking cache, one that does not serialize calls to the function it memoizes.
+ 由此引发了 memo3 的修改.
+ */

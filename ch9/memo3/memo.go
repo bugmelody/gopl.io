@@ -46,3 +46,7 @@ func (memo *Memo) Get(key string) (value interface{}, err error) {
 }
 
 //!-
+
+/**
+memo3 是错误的设计
+ */

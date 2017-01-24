@@ -60,6 +60,8 @@ func display(path string, v reflect.Value) {
 			display(fmt.Sprintf("%s[%d]", path, i), v.Index(i))
 		}
 	case reflect.Struct:
+		// ☆☆☆ The list of fields includes ones promoted from anonymous fields ☆☆☆
+		// ☆☆☆ The list of fields includes ones promoted from anonymous fields ☆☆☆
 		for i := 0; i < v.NumField(); i++ {
 			fieldPath := fmt.Sprintf("%s.%s", path, v.Type().Field(i).Name)
 			display(fieldPath, v.Field(i))

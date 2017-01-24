@@ -35,7 +35,14 @@ type request struct {
 	response chan<- result // the client wants a single result
 }
 
-/** the Memo type now consists of a channel, requests, through which the caller of Get communicates with the monitor goroutine. The element type of the channel is a request. Using this structure, the caller of Get sends the monitor goroutine both the key, that is, the argument to the memoized function, and another channel, response, over which the result should be sent back when it becomes available. This channel will carry only a single value. */
+/**
+the Memo type now consists of a channel, requests, through which the caller
+of Get communicates with the monitor goroutine. The element type of the channel
+is a request. Using this structure, the caller of Get sends the monitor goroutine
+both the key, that is, the argument to the memoized function, and another
+channel, response, over which the result should be sent back when it becomes
+available. This channel will carry only a single value.
+*/
 type Memo struct{ requests chan request }
 
 // New returns a memoization of f.  Clients must subsequently call Close.

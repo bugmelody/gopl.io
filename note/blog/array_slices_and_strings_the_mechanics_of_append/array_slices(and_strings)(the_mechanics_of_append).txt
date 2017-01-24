@@ -1,6 +1,8 @@
 The Go Blog
 Arrays, slices (and strings): The mechanics of 'append'
 
+[[[1-over]]] 2017-01-11 12:56:26
+
 26 September 2013
 =========================================================================
 Introduction
@@ -19,8 +21,8 @@ stumble over:  给…绊倒；结结巴巴地说
 
 In the early development of Go, it took about a year to decide the answers to these questions before the design felt right. The
 key step was the introduction of slices, which built on fixed-size arrays to give a flexible, extensible data structure. To this
-day, however, programmers new to Go often stumble over the way slices work, perhaps because experience from other languages has
-colored their thinking.
+day(to this day 至今，迄今，直到现在), however, programmers new to Go often stumble over the way slices work, perhaps because
+experience from other languages has colored their thinking.
 
 In this post we'll attempt to clear up the confusion. We'll do so by building up the pieces to explain how the append built-in
 function works, and why it works the way it does.
@@ -56,14 +58,13 @@ There is a built-in function called len that returns the number of elements of a
 types. For arrays, it's obvious what len returns. In our example, len(buffer) returns the fixed value 256.
 
 transformation matrix  :::[数] 变换矩阵，转换矩阵
-Arrays have their place—they are a good representation of a transformation matrix for instance—but their most common purpose
+Arrays have their place — they are a good representation of a transformation matrix for instance — but their most common purpose
 in Go is to hold storage for a slice.
 
 =========================================================================
 Slices: The slice header
 
 Slices are where the action is, but to use them well one must understand exactly what they are and what they do.
-
 
 contiguous [kən'tɪgjʊəs] adj. 连续的；邻近的；接触的
 A slice is a data structure describing a contiguous section of an array stored separately from the slice variable itself. A
@@ -82,14 +83,14 @@ var slice = buffer[100:150] # 非完整的声明形式, 类型被自动推导
 
 Inside a function we could use the short declaration form,
 
-slice := buffer[100:150]
+slice := buffer[100:150] # 只有在 function 内部才能使用冒号并省去 var
 
 What exactly is this slice variable? It's not quite the full story, but for now think of a slice as a little data structure with two
 elements: a length and a pointer to an element of a array. You can think of it as being built like this behind the scenes:
 
 type sliceHeader struct {
     Length        int
-    ZerothElement *byte
+    ZerothElement *byte // slice 的起始位置是对应数组中的哪个位置
 }
 
 slice := sliceHeader{
@@ -114,6 +115,7 @@ slice2 := sliceHeader{
 
 Notice that this header still points to the same underlying array, stored in the buffer variable.
 
+什么是 reslice?
 We can also reslice, which is to say slice a slice and store the result back in the original slice structure. After
 
 slice = slice[5:10]
@@ -127,6 +129,13 @@ slice = slice[1:len(slice)-1]
 
 ***********
 Exercise: Write out what the sliceHeader struct looks like after this assignment.
+
+答:
+
+slice2 := sliceHeader{
+    Length:        3,
+    ZerothElement: &buffer[106],
+}
 ***********
 
 
@@ -160,7 +169,7 @@ This matters.(这很重要)
 
 ramification [,ræmifi'keiʃən]  n. 分枝；分叉；枝的分布     分枝(或分叉)的结果，具体指：枝(状物)；支流；支脉；支线    后果；衍生物
 
-When we called IndexRune in the previous example, it was passed a copy of the slice header. That behavior has important ramifications.
+When we called IndexRune in the previous example, it was passed a copy of the slice header. That behavior has important ramifications(后果).
 
 Consider this simple function:
 
@@ -183,6 +192,10 @@ func main() {
     AddOneToEachElement(slice)
     fmt.Println("after", slice)
 }
+
+以上代码输出如下:
+before [0 1 2 3 4 5 6 7 8 9]
+after [1 2 3 4 5 6 7 8 9 10]
 
 (You can edit and re-execute these runnable snippets if you want to explore.)
 
@@ -227,9 +240,8 @@ func main() {
     fmt.Println("After:  len(slice) =", len(slice))
 }
 
-It seems clumsy in that example, especially dealing with the extra level of indirection (a temporary variable helps), but
-there is one common case where you see pointers to slices. It is idiomatic to use a pointer receiver for a method that
-modifies a slice.
+It seems clumsy(笨拙) in that example, especially dealing with the extra level of indirection (a temporary variable helps), but
+there is one common case where you see pointers to slices. It is idiomatic to use a pointer receiver for a method that modifies a slice.
 
 Let's say we wanted to have a method on a slice that truncates it at the final slash. We could write it like this:
 
@@ -248,7 +260,7 @@ func main() {
     fmt.Printf("%s\n", pathName)
 }
 
-If you run this example you'll see that it works properly, updating the slice in the caller.
+If you run this example you'll see that it works properly, updating the slice in the caller. 实际是更新了 p 指向的 sliceHeader.
 
 [Exercise: Change the type of the receiver to be a value rather than a pointer and run it again. Explain what happens.]
 
@@ -261,8 +273,7 @@ func (p path) TruncateAtFinalSlash() {
 }
 
 什么也没有变
-因为此时在 TruncateAtFinalSlash 内部修改的是 p 的一个拷贝,不会影响原始的值
-因此最后输出: /usr/bin/tso
+因为此时在 TruncateAtFinalSlash 内部修改的是 p 的一个拷贝,不会影响原始的p值
 *****
 
 parochial [pə'rəukjəl] adj. 教区的；行政管区的  乡镇的；地方性的   目光狭隘的，范围有限的；褊狭的
@@ -290,7 +301,7 @@ func main() {
 
 Here the ToUpper method uses two variables in the for range construct to capture the index and slice
 element. This form of loop avoids writing p[i] multiple times in the body.
-到此
+
 [Exercise: Convert the ToUpper method to use a pointer receiver and see if its behavior changes.]
 
 [Advanced exercise: Convert the ToUpper method to handle Unicode letters, not just ASCII.]
@@ -319,6 +330,21 @@ func main() {
 }
 
 See how the slice grows until... it doesn't.
+
+------------------
+报错:
+[0]
+[0 1]
+[0 1 2]
+[0 1 2 3]
+[0 1 2 3 4]
+[0 1 2 3 4 5]
+[0 1 2 3 4 5 6]
+[0 1 2 3 4 5 6 7]
+[0 1 2 3 4 5 6 7 8]
+[0 1 2 3 4 5 6 7 8 9]
+panic: runtime error: slice bounds out of range
+------------------
 
 It's time to talk about the third component of the slice header: its capacity. Besides the array pointer and
 length, the slice header also stores its capacity:
@@ -358,7 +384,7 @@ What if we want to grow the slice beyond its capacity? You can't! By definition,
 growth. But you can achieve an equivalent result by allocating a new array, copying the data over, and modifying
 the slice to describe the new array.
 
-Let's start with allocation. We could use the new built-in function to allocate a bigger array and then slice the
+Let's start with allocation. We could use the new built-in function(内置函数new) to allocate a bigger array and then slice the
 result, but it is simpler to use the make built-in function instead. It allocates a new array and creates a slice
 header to describe it, all at once. The make function takes three arguments: the type of the slice, its initial
 length, and its capacity, which is the length of the array that make allocates to hold the slice data. This call
@@ -400,8 +426,7 @@ from the right-hand argument to the left-hand argument. Here's our example rewri
 
 The copy function is smart. It only copies what it can, paying attention to the lengths of both arguments. In other
 words, the number of elements it copies is the minimum of the lengths of the two slices. This can save a little
-bookkeeping. Also, copy returns an integer value, the number of elements it copied, although it's not always worth
-checking.
+bookkeeping. Also, copy returns an integer value, the number of elements it copied, although it's not always worth checking.
 
 The copy function also gets things right when source and destination overlap, which means it can be used to shift
 items around in a single slice. Here's how to use copy to insert a value into the middle of a slice.
@@ -566,12 +591,15 @@ Append: The built-in function
 And so we arrive at the motivation for the design of the append built-in function. It does exactly what our Append
 example does, with equivalent efficiency, but it works for any slice type.
 
-A weakness of Go is that any generic-type operations must be provided by the run-time. Some day that may change, but
+A weakness of Go is that any generic-type operations(通用类型操作,指泛型操作) must be provided by the run-time. Some day that may change, but
 for now, to make working with slices easier, Go provides a built-in generic append function. It works the same as
 our int slice version, but for any slice type.
 
-Remember, since the slice header is always updated by a call to append, you need to save the returned slice after
-the call. In fact, the compiler won't let you call append without saving the result.
+Remember, since the slice header is always updated by a call to append, you need to save the returned slice after the call. In fact, the compiler won't let you call append without saving the result.
+Remember, since the slice header is always updated by a call to append, you need to save the returned slice after the call. In fact, the compiler won't let you call append without saving the result.
+Remember, since the slice header is always updated by a call to append, you need to save the returned slice after the call. In fact, the compiler won't let you call append without saving the result.
+Remember, since the slice header is always updated by a call to append, you need to save the returned slice after the call. In fact, the compiler won't let you call append without saving the result.
+Remember, since the slice header is always updated by a call to append, you need to save the returned slice after the call. In fact, the compiler won't let you call append without saving the result.
 
 
 intermingle [ɪntə'mɪŋg(ə)l] vt. 使混合；使搀和  vi. 混合；掺杂
@@ -611,6 +639,9 @@ Nil
 
 As an aside, with our newfound knowledge we can see what the representation of a nil slice is. Naturally, it is
 the zero value of the slice header:
+As an aside 顺便一提;另外
+
+nil slice 其实是 sliceHeader 的 zero value.
 
 sliceHeader{
     Length:        0,
@@ -628,11 +659,14 @@ array[0:0]
 
 has length zero (and maybe even capacity zero) but its pointer is not nil, so it is not a nil slice.
 
-As should be clear, an empty slice can grow (assuming it has non-zero capacity), but a nil slice has
-no array to put values in and can never grow to hold even one element.
+☆☆☆☆☆
+As should be clear, an empty slice can grow (assuming it has non-zero capacity), but a nil slice has no array to put values in and can never grow to hold even one element.
+As should be clear, an empty slice can grow (assuming it has non-zero capacity), but a nil slice has no array to put values in and can never grow to hold even one element.
+As should be clear, an empty slice can grow (assuming it has non-zero capacity), but a nil slice has no array to put values in and can never grow to hold even one element.
+☆☆☆☆☆
 
 That said, a nil slice is functionally equivalent to a zero-length slice, even though it points to nothing. It
-has length zero and can be appended to, with allocation. As an example, look at the one-liner above that copies
+has length zero and can be appended to, with allocation(不通过重新分配内存就无法被appended to). As an example, look at the one-liner above that copies
 a slice by appending to a nil slice.
 
 =========================================================================
@@ -640,8 +674,7 @@ Strings
 
 Now a brief section about strings in Go in the context of slices.
 
-Strings are actually very simple: they are just read-only slices of bytes with a bit of extra syntactic support
-from the language.
+Strings are actually very simple: they are just read-only slices of bytes with a bit of extra syntactic support from the language.
 
 Because they are read-only, there is no need for a capacity (you can't grow them), but otherwise for most purposes
 you can treat them just like read-only slices of bytes.
@@ -691,6 +724,7 @@ Once you appreciate how they work, slices become not only easy to use, but power
 help of the copy and append built-in functions.
 
 =========================================================================
+
 More reading
 
 intertubes: 这里指网络

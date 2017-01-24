@@ -1,3 +1,21 @@
+================================================================================================================================
+================================================================================================================================
+p306
+The output of a failing test does not include the entire stack trace at the moment of the call to t.Errorf. Nor does t.Errorf cause a panic or stop the execution of the test, unlike assertion failures in many test frameworks for other languages. Tests are independent of each other. If an early entry in the table causes the test to fail, later table entries will still be checked, and thus we may learn about multiple failures during a single run.
+
+When we really must stop a test function, perhaps because some initialization code failed or to prevent a failure already reported from causing a confusing cascade of others, we use t.Fatal or t.Fatalf. These must be called from the same goroutine as the Test function, not from another one created during the test.
+
+Test failure messages are usually of the form "f(x) = y, want z", where f(x) explains the attempted operation and its input, y is the actual result, and z the expected result. Where convenient, as in our palindrome example, actual Go syntax is used for the f(x) part. Displaying x is particularly important in a table-driven test, since a given assertion is executed many times with different values. Avoid boilerplate and redundant information. When testing a boolean function such as IsPalindrome, omit the want z part since it adds no information. If x, y, or z is lengthy, print a concise summary of the relevant parts instead. The author of a test should strive to help the programmer who must diagnose a test failure. 
+================================================================================================================================
+Randomized Testing
+
+Table-driven tests are convenient for checking that a function works on inputs carefully selected to exercise interesting cases in the logic. Another approach, randomized testing, explores a broader range of inputs by constructing inputs at random.
+
+How do we know what output to expect from our function, given a random input? There are two strategies. The first is to write an alternative implementation of the function that uses a less efficient but simpler and clearer algorithm, and check that both implementations give the same result. The second is to create input values according to a pattern so that we know what output to expect. 
+================================================================================================================================
+不熟悉,多看看: 6.2.1. Nil Is a Valid Receiver Value (p159)
+不熟悉,多看看: 12.5 Setting Variables with reflect.Value (p341)
+================================================================================================================================
 p225底部:
 Channels support a third operation(前两个是接收,发送), close, which sets a flag indicating that no more values will
 ever be sent on this channel; subsequent attempts to send will panic. Receive operations on a
@@ -1747,21 +1765,22 @@ fmt.Printf("%T\n", w) // "*bytes.Buffer"
 Internally, fmt uses reflection to obtain the name of the interface's dynamic type.
 ================================================================================================================================
 4.4.3. Struct Embedding and Anonymous Fields (p104) [2016-12-26 21:59:21]
-5.10. Recover
-p140 : 5.6.1. Caveat: Capturing Iteration Variables
-6.2. Methods with a Pointer Receiver
-6.2.1. Nil Is a Valid Receiver Value
-6.3. Composing Types by Struct Embedding
-6.4. Method Values and Expressions
-6.5. Example: Bit Vector Type
-7.4. Parsing Flags with flag.Value
-7.5. Interface Values
-7.5.1. Caveat: An Interface Containing a Nil Pointer Is Non-Nil
-7.6. Sorting with sort.Interface
-7.10. Type Assertions
-7.11. Discriminating Errors with Type Assertions
-7.12. Querying Behaviors with Interface Type Assertions
-7.13. Type Switches
+5.10. Recover (p151) [2017-1-4 21:28:54]
+5.6.1. Caveat: Capturing Iteration Variables (p140) [2017-1-4 21:28:54]
+6.2. Methods with a Pointer Receiver (p158) [2017-1-4 21:28:54]
+6.2.1. Nil Is a Valid Receiver Value (p159) [2017-1-5 21:10:24]
+6.3. Composing Types by Struct Embedding [2017-1-5 21:36:24]
+6.4. Method Values and Expressions [2017-1-5 21:44:24]
+6.5. Example: Bit Vector Type [2017-1-6 21:44:24]
+7.4. Parsing Flags with flag.Value [2017-1-6 21:44:24]
+7.5. Interface Values [2017-1-6 21:44:24]
+7.5.1. Caveat: An Interface Containing a Nil Pointer Is Non-Nil [2017-1-6 22:44:24]
+7.6. Sorting with sort.Interface [2017-1-7 13:14:24]
+7.10. Type Assertions [2017-1-7 17:50:24]
+7.11. Discriminating Errors with Type Assertions [2017-1-7 18:00:24]
+7.12. Querying Behaviors with Interface Type Assertions [2017-1-7 18:15:24]
+7.13. Type Switches [2017-1-7 18:30:24]
+7.14. Example: Token-Based XML Decoding [2017-1-7 19:30:24]
 第八章
 第九章
 
@@ -1776,20 +1795,19 @@ gopl.io/ch9/memo4
 gopl.io/ch9/memo5
 
 
-10.7.5. Internal Packages
-10.7.6. Querying Packages
-11.2.4. External Test Packages
-p341 12.5 Setting Variables with reflect.Value
-p344 12.6. Example: Decoding S-Expressions
-p348 12.7. Accessing Struct Field Tags
+10.7.5. Internal Packages (p297) [2017-1-7 19:50:24]
+10.7.6. Querying Packages (p298) [2017-1-7 19:50:24]
+11.2.4. External Test Packages (p314) 到此 [2017-1-7 19:50:24]
 p329   12章 反射 都可以多看看
-12.8. Displaying the Methods of a Type
-================================================================================================================================
-ch12/sexpr
+
+12.6. Example: Decoding S-Expressions 到此
 ================================================================================================================================
 gopl.io/ch7/bytecounter
 ================================================================================================================================
+gopl\src\gopl.io\other\page184\main.go
 ================================================================================================================================
+11.3. Coverage 到此
+
 ================================================================================================================================
 ================================================================================================================================
 ================================================================================================================================

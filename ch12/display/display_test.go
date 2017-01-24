@@ -208,6 +208,7 @@ func Test(t *testing.T) {
 	// ...
 
 	// a pointer that points to itself
+	// ??? 这是什么意思 ??? 还能这样进行递归定义 ???
 	type P *P
 	var p P
 	p = &p
@@ -219,6 +220,7 @@ func Test(t *testing.T) {
 	}
 
 	// a map that contains itself
+	// ??? 这是什么意思 ??? 还能这样进行递归定义 ???
 	type M map[string]M
 	m := make(M)
 	m[""] = m
@@ -230,6 +232,7 @@ func Test(t *testing.T) {
 	}
 
 	// a slice that contains itself
+	// ??? 这是什么意思 ??? 还能这样进行递归定义 ???
 	type S []S
 	s := make(S, 1)
 	s[0] = s

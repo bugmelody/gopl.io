@@ -1,5 +1,5 @@
 The Laws of Reflection
-[[[1-over]]] 2016-12-23 15:13:23
+[[[2-over]]] 2017-01-11 09:56:26
 
 6 September 2011
 
@@ -19,9 +19,10 @@ type MyInt int
 
 var i int
 var j MyInt
+
 then i has type int and j has type MyInt. The variables i and j have distinct static types and, although they have the same underlying type, they cannot be assigned to one another without a conversion.
 
-One important category of type is interface types, which represent fixed sets of methods. An interface variable can store any concrete (non-interface) value as long as that value implements the interface's methods. A well-known pair of examples is io.Reader and io.Writer, the types Reader and Writer from the io package:
+One important category of type is interface types(interface type 也属于 type 的一种), which represent fixed sets of methods. An interface variable can store any concrete (non-interface) value as long as that value implements the interface's methods. A well-known pair of examples is io.Reader and io.Writer, the types Reader and Writer from the io package:
 
 // Reader is the interface that wraps the basic Read method.
 type Reader interface {
@@ -32,6 +33,7 @@ type Reader interface {
 type Writer interface {
     Write(p []byte) (n int, err error)
 }
+
 Any type that implements a Read (or Write) method with this signature is said to implement io.Reader (or io.Writer). For the purposes of this discussion, that means that a variable of type io.Reader can hold any value whose type has a Read method:
 
 var r io.Reader
@@ -39,11 +41,17 @@ r = os.Stdin
 r = bufio.NewReader(r)
 r = new(bytes.Buffer)
 // and so on
+
+☆☆☆☆☆☆
+☆☆☆☆☆☆
 It's important to be clear that whatever concrete value r may hold, `r`'s type is always io.Reader: Go is statically typed and the static type of r is io.Reader.
+☆☆☆☆☆☆
+☆☆☆☆☆☆
 
 An extremely important example of an interface type is the empty interface:
 
 interface{}
+
 It represents the empty set of methods and is satisfied by any value at all, since any value has zero or more methods.
 
 Some people say that Go's interfaces are dynamically typed, but that is misleading. They are statically typed: a variable of interface type always has the same static type, and even though at run time the value stored in the interface variable may change type, that value will always satisfy the interface.
@@ -62,21 +70,29 @@ if err != nil {
     return nil, err
 }
 r = tty
+
 r contains, schematically, the (value, type) pair, (tty, *os.File). Notice that the type *os.File implements methods other than Read; even though the interface value provides access only to the Read method, the value inside carries all the type information about that value. That's why we can do things like this:
 
 var w io.Writer
 w = r.(io.Writer)
+
 The expression in this assignment is a type assertion; what it asserts is that the item inside r also implements io.Writer, and so we can assign it to w. After the assignment, w will contain the pair (tty, *os.File). That's the same pair as was held in r. The static type of the interface determines what methods may be invoked with an interface variable, even though the concrete value inside may have a larger set of methods.
 
 Continuing, we can do this:
 
 var empty interface{}
 empty = w
+
 and our empty interface value empty will again contain that same pair, (tty, *os.File). That's handy: an empty interface can hold any value and contains all the information we could ever need about that value.
 
 (We don't need a type assertion here because it's known statically that w satisfies the empty interface. In the example where we moved a value from a Reader to a Writer, we needed to be explicit and use a type assertion because `Writer`'s methods are not a subset of `Reader`'s.)
 
+☆☆☆☆☆☆
+☆☆☆☆☆☆
 One important detail is that the pair inside an interface always has the form (value, concrete type) and cannot have the form (value, interface type). Interfaces do not hold interface values.
+☆☆☆☆☆☆
+☆☆☆☆☆☆
+
 
 Now we're ready to reflect.
 
@@ -108,6 +124,7 @@ You might be wondering where the interface is here, since the program looks like
 
 // TypeOf returns the reflection Type of the value in the interface{}.
 func TypeOf(i interface{}) Type
+
 When we call reflect.TypeOf(x), x is first stored in an empty interface, which is then passed as the argument; reflect.TypeOf unpacks that empty interface to recover the type information.
 
 The reflect.ValueOf function, of course, recovers the value (from here on we'll elide the boilerplate and focus just on the executable code):
@@ -157,13 +174,14 @@ type MyInt int
 var x MyInt = 7
 v := reflect.ValueOf(x)
 
+discriminate [dɪ'skrɪmɪneɪt] vt. 歧视；区别；辨别 vi. 区别；辨别
 the Kind of v is still reflect.Int, even though the static type of x is MyInt, not int. In other words, the Kind cannot discriminate an int from a MyInt even though the Type can.
 
 The second law of reflection
 
 2. Reflection goes from reflection object to interface value.
 
-Like physical reflection, reflection in Go generates its own inverse.
+Like physical reflection(比喻光反射), reflection in Go generates its own inverse.
 
 Given a reflect.Value we can recover an interface value using the Interface method; in effect the method packs the type and value information back into an interface representation and returns the result:
 
@@ -180,6 +198,7 @@ to print the float64 value represented by the reflection object v.
 We can do even better, though. The arguments to fmt.Println, fmt.Printf and so on are all passed as empty interface values, which are then unpacked by the fmt package internally just as we have been doing in the previous examples. Therefore all it takes to print the contents of a reflect.Value correctly is to pass the result of the Interface method to the formatted print routine:
 
 fmt.Println(v.Interface())
+
 (Why not fmt.Println(v)? Because v is a reflect.Value; we want the concrete value it holds.) Since our value is a float64, we can even use a floating-point format if we want:
 
 fmt.Printf("value is %7.1e\n", v.Interface())

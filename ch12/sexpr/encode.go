@@ -39,6 +39,7 @@ func encode(buf *bytes.Buffer, v reflect.Value) error {
 		fmt.Fprintf(buf, "%d", v.Uint())
 
 	case reflect.String:
+		// 对于 string 来说, %q 的意义: %q: a double-quoted string safely escaped with Go syntax
 		fmt.Fprintf(buf, "%q", v.String())
 
 	case reflect.Ptr:
