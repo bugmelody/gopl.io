@@ -1,5 +1,5 @@
 http://localhost:8080/blog/json-and-go
-[[[2-over]]] 2017-01-24 15:45:01
+[[[3-over]]] 2017-01-24 15:45:01
 
 JSON and Go
 
@@ -105,7 +105,7 @@ beforehand [bɪ'fɔːhænd] adv. 事先；预先 adj. 提前的；预先准备�
 But what if you don't know the structure of your JSON data beforehand?
 
 Generic JSON with interface{}
-
+到此
 The interface{} (empty interface) type describes an interface with zero methods. Every Go type implements at least zero methods and therefore satisfies the empty interface.
 
 The empty interface serves as a general container type:

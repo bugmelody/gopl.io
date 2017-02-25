@@ -1975,7 +1975,7 @@ func (tz TimeZone) String() string {
 </pre>
 
 
-<h3 id="Variable_declarations">Variable declarations到此</h3>
+<h3 id="Variable_declarations">Variable declarations</h3>
 
 <p>
 A variable declaration creates one or more variables, binds corresponding
@@ -2284,7 +2284,7 @@ For struct literals the following rules apply:
 	</li>
 	<li>An element list that does not contain any keys must
 	    list an element for each struct field in the
-	    order in which the fields are declared.
+	    order in which the fields are declared. [[[如果 element list 不含任何 key, 则必须按声明的相同顺序给每个 struct field 列出 element]]]
 	</li>
 	<li>If any element has a key, every element must have a key.
 	</li>
@@ -2554,6 +2554,7 @@ expression is illegal.
 As an exception, if the type of <code>x</code> is a named pointer type
 and <code>(*x).f</code> is a valid selector expression denoting a field
 (but not a method), <code>x.f</code> is shorthand for <code>(*x).f</code>.
+[[[???]]]
 </li>
 
 <li>
@@ -2612,16 +2613,16 @@ one may write:
 
 <pre>t.z          // t.z
 t.y          // t.T1.y
-t.x          // (*t.T0).x
+t.x          // (*t.T0).x [[[注意]]]
 
-p.z          // (*p).z
-p.y          // (*p).T1.y
-p.x          // (*(*p).T0).x
+p.z          // (*p).z [[[注意]]]
+p.y          // (*p).T1.y [[[注意]]]
+p.x          // (*(*p).T0).x [[[注意]]]
 
-q.x          // (*(*q).T0).x        (*q).x is a valid field selector
+q.x          // (*(*q).T0).x        (*q).x is a valid field selector [[[注意]]]
 
-p.M0()       // ((*p).T0).M0()      M0 expects *T0 receiver
-p.M1()       // ((*p).T1).M1()      M1 expects T1 receiver
+p.M0()       // ((*p).T0).M0()      M0 expects *T0 receiver [[[T2 struct中T0是指针类型]]]
+p.M1()       // ((*p).T1).M1()      M1 expects T1 receiver [[[T2 struct中T1是非指针类型]]]
 p.M2()       // p.M2()              M2 expects *T2 receiver
 t.M2()       // (&amp;t).M2()           M2 expects *T2 receiver, see section on Calls
 </pre>
@@ -2630,7 +2631,12 @@ t.M2()       // (&amp;t).M2()           M2 expects *T2 receiver, see section on 
 but the following is invalid:
 </p>
 
-<pre>q.M0()       // (*q).M0 is valid but not a field selector [[[?????????????????????????????]]]
+<pre>q.M0()       // (*q).M0 is valid but not a field selector
+</pre>
+<pre>
+	上面有提到: As an exception, if the type of x is a named pointer type
+	and (*x).f is a valid selector expression denoting a
+	field (but not a method), x.f is shorthand for (*x).f.
 </pre>
 
 
@@ -2841,9 +2847,9 @@ using an addressable value will automatically take the address of that value: <c
 
 <pre>f := t.Mv; f(7)   // like t.Mv(7)
 f := pt.Mp; f(7)  // like pt.Mp(7)
-f := pt.Mv; f(7)  // like (*pt).Mv(7)
-f := t.Mp; f(7)   // like (&amp;t).Mp(7)
-f := makeT().Mp   // invalid: result of makeT() is not addressable [[[???????????]]]
+f := pt.Mv; f(7)  // like (*pt).Mv(7) [[[automatically dereference that pointer]]]
+f := t.Mp; f(7)   // like (&amp;t).Mp(7) [[[automatically take the address of that value]]]
+f := makeT().Mp   // invalid: result of makeT() is not addressable
 </pre>
 
 <p>
@@ -3019,7 +3025,7 @@ If <code>a</code> is a pointer to an array, <code>a[low : high]</code> is shorth
 </p>
 
 <p>
-For arrays or strings, the indices are <i>in range</i> if
+For arrays or strings, the indices[[[指low和high]]] are <i>in range</i> if
 <code>0</code> &lt;= <code>low</code> &lt;= <code>high</code> &lt;= <code>len(a)</code>,
 otherwise they are <i>out of range</i>.
 For slices, the upper index bound is the slice capacity <code>cap(a)</code> rather than the length.
@@ -3162,7 +3168,8 @@ Given an expression <code>f</code> of function type
 calls <code>f</code> with arguments <code>a1, a2, … an</code>.
 Except for one special case, arguments must be single-valued expressions
 <a href="#Assignability">assignable</a> to the parameter types of
-<code>F</code> and are evaluated before the function is called.
+<code>F</code> and are evaluated before the function is called
+	[[[函数参数是在调用前被估值]]].
 The type of the expression is the result type
 of <code>F</code>.
 A method invocation is similar but the method itself
@@ -3322,9 +3329,13 @@ it is first converted to the type it would assume if the shift expression were
 replaced by its left operand alone.
 </p>
 
+<pre>移位表达式中的右操作数必须为uint，或为可转换为uint的untyped constant。
+??后面这句话怎么翻译??
+</pre>
+
 <pre>var s uint = 33
 var i = 1&lt;&lt;s           // 1 has type int
-var j int32 = 1&lt;&lt;s     // 1 has type int32; j == 0
+var j int32 = 1&lt;&lt;s     // 1 has type int32; j == 0 [[[??? j==0 ???]]]
 var k = uint64(1&lt;&lt;s)   // 1 has type uint64; k == 1&lt;&lt;33
 var m int = 1.0&lt;&lt;s     // 1.0 has type int; m == 0 if ints are 32bits in size
 var n = 1.0&lt;&lt;s == j    // 1.0 has type int32; n == true
@@ -3383,7 +3394,7 @@ x == y+1 &amp;&amp; &lt;-chanPtr &gt; 0
 
 <h3 id="Arithmetic_operators">Arithmetic operators</h3>
 <p>
-Arithmetic operators apply to numeric values and yield a result of the same
+Arithmetic operators[[[算术运算符]]] apply to numeric values and yield a result of the same
 type as the first operand. The four standard arithmetic operators (<code>+</code>,
 <code>-</code>, <code>*</code>, <code>/</code>) apply to integer,
 floating-point, and complex types; <code>+</code> also applies to strings.
@@ -3428,6 +3439,7 @@ with <code>x / y</code> truncated towards zero
  5    -3      -1         2
 -5    -3       1        -2
 </pre>
+<pre>注意上面的几种情况都满足x = q*y + r  and  |r| < |y|</pre>
 
 <p>
 As an exception to this rule, if the dividend <code>x</code> is the most
@@ -3460,7 +3472,9 @@ The shift operators shift the left operand by the shift count specified by the
 right operand. They implement arithmetic shifts if the left operand is a signed
 integer and logical shifts if it is an unsigned integer.
 <pre>
-[如果左操作数是有符号整数,执行的是arithmetic shifts,如果左操作数是无符号整数,执行的是logical shifts]. 
+[如果左操作数是有符号整数,执行的是arithmetic shifts,如果左操作数是无符号整数,执行的是logical shifts].
+	
+参考: 逻辑位移与算数位移的区别 http://blog.csdn.net/sinat_32547403/article/details/52894815
 </pre>
 There is no upper limit on the shift count. Shifts behave
 as if the left operand is shifted <code>n</code> times by 1 for a shift
@@ -3631,7 +3645,7 @@ A comparison of two interface values with identical dynamic types
 causes a <a href="#Run_time_panics">run-time panic</a> if values
 of that type are not comparable.  This behavior applies not only to direct interface
 value comparisons but also when comparing arrays of interface values
-or structs with interface-valued fields.
+or structs with interface-valued fields.[[[注意]]]
 </p>
 
 <p>
@@ -3870,7 +3884,7 @@ restricted circumstances.
 </pre>
 </p>
 
-<h4>Conversions between numeric types</h4>
+<h4>Conversions between numeric types到此</h4>
 
 <p>
 For the conversion of non-constant numeric values, the following rules apply:
