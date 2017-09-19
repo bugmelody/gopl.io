@@ -17,11 +17,11 @@ import (
 // path of each regular file on the string channel.  It sends the result of the
 // walk on the error channel.  If done is closed, walkFiles abandons its work.
 func walkFiles(done <-chan struct{}, root string) (<-chan string, <-chan error) {
-	paths := make(chan string)
-	errc := make(chan error, 1) // 缓冲为 1
+	paths := make(chan string) // 函数第一返回值
+	errc := make(chan error, 1) // 函数第二返回值,缓冲为1,保证对其send是非阻塞
 	go func() { // HL
 		// Close the paths channel after Walk returns.
-		defer close(paths) // HL
+		defer close(paths) // HL // 通知接收方不再有发送了
 		// No select needed for this send, since errc is buffered.
 		errc <- filepath.Walk(root, func(path string, info os.FileInfo, err error) error { // HL
 			if err != nil {
@@ -34,7 +34,7 @@ func walkFiles(done <-chan struct{}, root string) (<-chan string, <-chan error) 
 			case paths <- path: // HL
 				// 非阻塞 send 操作
 			case <-done: // HL
-				// 非阻塞 receive 操作
+				// 外部是通过close实现的信号通知
 				return errors.New("walk canceled")
 			}
 			return nil
@@ -74,7 +74,7 @@ func MD5All(root string) (map[string][md5.Size]byte, error) {
 	// MD5All closes the done channel when it returns; it may do so before
 	// receiving all the values from c and errc.
 	done := make(chan struct{})
-	defer close(done)
+	defer close(done) // 广播取消信号
 
 	paths, errc := walkFiles(done, root)
 

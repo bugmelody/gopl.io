@@ -15,6 +15,7 @@ import (
 
 // An IntSet is a set of small non-negative integers.
 // Its zero value represents the empty set.
+// 一个很小的IntSet就能存储大量的信息
 type IntSet struct {
 	words []uint64
 }
@@ -30,6 +31,7 @@ func (s *IntSet) Has(x int) bool {
 func (s *IntSet) Add(x int) {
 	word, bit := x/64, uint(x%64)
 	for word >= len(s.words) {
+		// append支持向nil的slice添加元素
 		s.words = append(s.words, 0)
 	}
 	s.words[word] |= 1 << bit
@@ -65,7 +67,7 @@ func (s *IntSet) String() string {
 		for j := 0; j < 64; j++ {
 			if word&(1<<uint(j)) != 0 {
 				if buf.Len() > len("{") {
-					buf.WriteByte(' ')
+					buf.WriteByte(' ') // 非首次循环,添加空格进行分割
 				}
 				fmt.Fprintf(&buf, "%d", 64*i+j)
 			}

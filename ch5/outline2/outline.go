@@ -106,3 +106,36 @@ func endElement(n *html.Node) {
 }
 
 //!-startend
+
+/**
+输出结果如下:
+
+<html>
+  <head>
+    <meta>
+    </meta>
+    <meta>
+    </meta>
+    <title>
+    </title>
+    <meta>
+    </meta>
+    <meta>
+    </meta>
+    <link>
+    </link>
+    <meta>
+    </meta>
+    <meta>
+    </meta>
+    <link>
+    </link>
+    <script>
+    </script>
+  </head>
+  <body>
+  ...... 省略
+  </body>
+</html>
+
+ */

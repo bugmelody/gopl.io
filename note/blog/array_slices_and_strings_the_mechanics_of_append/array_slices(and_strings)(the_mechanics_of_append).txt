@@ -1,7 +1,15 @@
 The Go Blog
 Arrays, slices (and strings): The mechanics of 'append'
 
-[[[1-over]]] 2017-01-11 12:56:26
+原始地址: 
+参考译文: http://www.jianshu.com/p/2de7a1f22b1a
+
+[[[3-over]]] 2017-08-30 19:03:19
+
+先看看如下几个链接: 
+Go Slices: usage and internals              http://localhost:6060/blog/go-slices-usage-and-internals
+Go Data Structures                          https://research.swtch.com/godata
+SliceTricks                                 https://github.com/golang/go/wiki/SliceTricks
 
 26 September 2013
 =========================================================================
@@ -58,6 +66,7 @@ There is a built-in function called len that returns the number of elements of a
 types. For arrays, it's obvious what len returns. In our example, len(buffer) returns the fixed value 256.
 
 transformation matrix  :::[数] 变换矩阵，转换矩阵
+have place 有容身之地，(有位置)存在，占有位置, 这里翻译为:(数组有它们存在的意义)()
 Arrays have their place — they are a good representation of a transformation matrix for instance — but their most common purpose
 in Go is to hold storage for a slice.
 
@@ -71,7 +80,7 @@ A slice is a data structure describing a contiguous section of an array stored s
 slice is not an array. A slice describes a piece of an array.
 
 Given our buffer array variable from the previous section, we could create a slice that describes elements 100 through 150 (to be
-precise, 100 through 149, inclusive) by slicing the array:
+precise, 100 through 149, inclusive) by slicing(注意这个动词) the array:
 
 var slice []byte = buffer[100:150] # 完整的声明形式
 
@@ -90,9 +99,10 @@ elements: a length and a pointer to an element of a array. You can think of it a
 
 type sliceHeader struct {
     Length        int
-    ZerothElement *byte // slice 的起始位置是对应数组中的哪个位置
+    ZerothElement *byte // slice 的起始位置是对应数组中的哪个元素
 }
 
+// 从100个元素开始,slice出50的长度
 slice := sliceHeader{
     Length:        50,
     ZerothElement: &buffer[100],
@@ -173,6 +183,7 @@ When we called IndexRune in the previous example, it was passed a copy of the sl
 
 Consider this simple function:
 
+// 对slice中的每个数加1
 func AddOneToEachElement(slice []byte) {
     for i := range slice {
         slice[i]++
@@ -211,10 +222,10 @@ func SubtractOneFromLength(slice []byte) []byte {
 }
 
 func main() {
-    fmt.Println("Before: len(slice) =", len(slice))
+    fmt.Println("Before: len(slice) =", len(slice)) // Before: len(slice) = 10
     newSlice := SubtractOneFromLength(slice)
-    fmt.Println("After:  len(slice) =", len(slice))
-    fmt.Println("After:  len(newSlice) =", len(newSlice))
+    fmt.Println("After:  len(slice) =", len(slice)) // After:  len(slice) = 10
+    fmt.Println("After:  len(newSlice) =", len(newSlice)) // After:  len(newSlice) = 9
 }
 
 Here we see that the contents of a slice argument can be modified by a function, but its header cannot. The length
@@ -235,9 +246,9 @@ func PtrSubtractOneFromLength(slicePtr *[]byte) {
 }
 
 func main() {
-    fmt.Println("Before: len(slice) =", len(slice))
+    fmt.Println("Before: len(slice) =", len(slice)) // Before: len(slice) = 10
     PtrSubtractOneFromLength(&slice)
-    fmt.Println("After:  len(slice) =", len(slice))
+    fmt.Println("After:  len(slice) =", len(slice)) // After:  len(slice) = 9
 }
 
 It seems clumsy(笨拙) in that example, especially dealing with the extra level of indirection (a temporary variable helps), but
@@ -249,18 +260,19 @@ type path []byte
 
 func (p *path) TruncateAtFinalSlash() {
     i := bytes.LastIndex(*p, []byte("/"))
-    if i >= 0 {
-        *p = (*p)[0:i]
+    if i >= 0 { // 找到了
+        *p = (*p)[0:i] // 进行截取
     }
 }
 
 func main() {
     pathName := path("/usr/bin/tso") // Conversion from string to path.
     pathName.TruncateAtFinalSlash()
-    fmt.Printf("%s\n", pathName)
+    fmt.Printf("%s\n", pathName) // /usr/bin
 }
 
-If you run this example you'll see that it works properly, updating the slice in the caller. 实际是更新了 p 指向的 sliceHeader.
+If you run this example you'll see that it works properly, updating the slice in the caller.
+实际是更新了指针p指向的sliceHeader的len字段.并没有影响底层数组.
 
 [Exercise: Change the type of the receiver to be a value rather than a pointer and run it again. Explain what happens.]
 
@@ -279,12 +291,11 @@ func (p path) TruncateAtFinalSlash() {
 parochial [pə'rəukjəl] adj. 教区的；行政管区的  乡镇的；地方性的   目光狭隘的，范围有限的；褊狭的
 On the other hand, if we wanted to write a method for path that upper-cases the ASCII letters in the
 path (parochially ignoring non-English names), the method could be a value because the value receiver
-will still point to the same underlying array.
-
-因为只是在循环中修改了p[i],并没有修改p的底层数组
+will still point to the same underlying array(此时sliceHeader不会被修改,但是底层数组被修改了).
 
 type path []byte
 
+// 注意: ToUpper只是修改了p的底层数组,并未修改p,p实际是sliceheader
 func (p path) ToUpper() {
     for i, b := range p {
         if 'a' <= b && b <= 'z' {
@@ -296,13 +307,25 @@ func (p path) ToUpper() {
 func main() {
     pathName := path("/usr/bin/tso")
     pathName.ToUpper()
-    fmt.Printf("%s\n", pathName)
+    fmt.Printf("%s\n", pathName) // /USR/BIN/TSO
 }
 
 Here the ToUpper method uses two variables in the for range construct to capture the index and slice
 element. This form of loop avoids writing p[i] multiple times in the body.
 
 [Exercise: Convert the ToUpper method to use a pointer receiver and see if its behavior changes.]
+答案如下:
+// 与 ToUpper 相比没有变化,因为还是同一个 sliceHeader 并且指向底层数组的同一块区域
+func (p *path) ToUpper2() {
+	for i, b := range *p {
+		if 'a' <= b && b <= 'z' {
+			// 注意: 这里不能写为 *p[i] = b + 'A' - 'a', 会报错:
+			// *p[i] = b + 'A' - 'a' // invalid operation: p[i] (type *path does not support indexing)
+			// 必须先进行解引用,再进行索引操作
+			(*p)[i] = b + 'A' - 'a'
+		}
+	}
+}
 
 [Advanced exercise: Convert the ToUpper method to handle Unicode letters, not just ASCII.]
 
@@ -321,8 +344,8 @@ func Extend(slice []int, element int) []int {
 (Why does it need to return the modified slice?) Now run it:
 
 func main() {
-    var iBuffer [10]int
-    slice := iBuffer[0:0]
+    var iBuffer [10]int // 声明一个长度10的数组
+    slice := iBuffer[0:0] // 初始slice,长度为0
     for i := 0; i < 20; i++ {
         slice = Extend(slice, i)
         fmt.Println(slice)
@@ -377,6 +400,7 @@ of the slice (zero in this case). If you want to inquire what the capacity is fo
 if cap(slice) == len(slice) {
     fmt.Println("slice is full!")
 }
+
 =========================================================================
 Make
 
@@ -434,13 +458,15 @@ items around in a single slice. Here's how to use copy to insert a value into th
 // Insert inserts the value into the slice at the specified index,
 // which must be in range.
 // The slice must have room for the new element.
+// 向slice的index位置插入value
+// todo: 本函数有个bug,cap不足时会panic,后面谈到了如何解决
 func Insert(slice []int, index, value int) []int {
     // Grow the slice by one element.
-    slice = slice[0 : len(slice)+1]
+    slice = slice[0 : len(slice)+1] // 这叫reslice,这里是在增加length
     // Use copy to move the upper part of the slice out of the way and open a hole.
-    copy(slice[index+1:], slice[index:])
+    copy(slice[index+1:], slice[index:]) // index的位置开了个洞
     // Store the new value.
-    slice[index] = value
+    slice[index] = value // 填充洞
     // Return the result.
     return slice
 }
@@ -465,14 +491,31 @@ array[:]
 
 Now that's out of the way, let's run our Insert function.
 
-    slice := make([]int, 10, 20) // Note capacity > length: room to add element.
-    for i := range slice {
-        slice[i] = i
+    func main() {
+    	slice := make([]int, 10, 20) // Note capacity > length: room to add element. 有10个多余的空间
+    	for i := range slice {
+    		fmt.Println("-----", i)
+    		slice[i] = i // 这里只会循环10次, range作用在slice上,是以slice的len为准
+    	}
+    	fmt.Println(slice)
+    	slice = Insert(slice, 5, 99)
+    	fmt.Println(slice)
     }
-    fmt.Println(slice)
-    slice = Insert(slice, 5, 99)
-    fmt.Println(slice)
-
+    
+    输出如下:
+    
+    ----- 0
+    ----- 1
+    ----- 2
+    ----- 3
+    ----- 4
+    ----- 5
+    ----- 6
+    ----- 7
+    ----- 8
+    ----- 9
+    [0 1 2 3 4 5 6 7 8 9]
+    [0 1 2 3 4 99 5 6 7 8 9]
 
 =========================================================================
 Append: An example
@@ -490,9 +533,9 @@ func Extend(slice []int, element int) []int {
         copy(newSlice, slice)
         slice = newSlice
     }
-    slice = slice[0 : n+1]
+    slice = slice[0 : n+1] // 这就是所谓的reslice,这里是增加了length
     slice[n] = element
-    return slice
+    return slice // 非常重要,必须返回,因为(1.sliceHeader的length一定会变动 2.sliceHeader可能已经指向一个新分配的底层数组)
 }
 
 In this case it's especially important to return the slice, since when it reallocates the resulting slice describes
@@ -522,6 +565,8 @@ are exactly a slice of int as far as the implementation of Append is concerned, 
 
 // Append appends the items to the slice.
 // First version: just loop calling Extend.
+// 这个版本有个问题,当到达cap限制的时候,由于内部使用了for循环
+// 因此每个循环都会进行新的数组内存分配
 func Append(slice []int, items ...int) []int {
     for _, item := range items {
         slice = Extend(slice, item)
@@ -570,8 +615,8 @@ func Append(slice []int, elements ...int) []int {
         copy(newSlice, slice)
         slice = newSlice
     }
-    slice = slice[:total]
-    copy(slice[n:], elements)
+    slice = slice[:total] // reslice到total长度
+    copy(slice[n:], elements) // cp剩余元素
     return slice
 }
 
@@ -597,9 +642,6 @@ our int slice version, but for any slice type.
 
 Remember, since the slice header is always updated by a call to append, you need to save the returned slice after the call. In fact, the compiler won't let you call append without saving the result.
 Remember, since the slice header is always updated by a call to append, you need to save the returned slice after the call. In fact, the compiler won't let you call append without saving the result.
-Remember, since the slice header is always updated by a call to append, you need to save the returned slice after the call. In fact, the compiler won't let you call append without saving the result.
-Remember, since the slice header is always updated by a call to append, you need to save the returned slice after the call. In fact, the compiler won't let you call append without saving the result.
-Remember, since the slice header is always updated by a call to append, you need to save the returned slice after the call. In fact, the compiler won't let you call append without saving the result.
 
 
 intermingle [ɪntə'mɪŋg(ə)l] vt. 使混合；使搀和  vi. 混合；掺杂
@@ -609,25 +651,25 @@ Here are some one-liners intermingled with print statements. Try them, edit them
     // Create a couple of starter slices.
     slice := []int{1, 2, 3}
     slice2 := []int{55, 66, 77}
-    fmt.Println("Start slice: ", slice)
-    fmt.Println("Start slice2:", slice2)
+    fmt.Println("Start slice: ", slice) // Start slice:  [1 2 3]
+    fmt.Println("Start slice2:", slice2) // Start slice2: [55 66 77]
 
     // Add an item to a slice.
     slice = append(slice, 4)
-    fmt.Println("Add one item:", slice)
+    fmt.Println("Add one item:", slice) // Add one item: [1 2 3 4]
 
     // Add one slice to another.
     slice = append(slice, slice2...)
-    fmt.Println("Add one slice:", slice)
+    fmt.Println("Add one slice:", slice) // Add one slice: [1 2 3 4 55 66 77]
 
     // Make a copy of a slice (of int).
-    slice3 := append([]int(nil), slice...)
-    fmt.Println("Copy a slice:", slice3)
+    slice3 := append([]int(nil), slice...) // 这个技巧经常使用
+    fmt.Println("Copy a slice:", slice3) // Copy a slice: [1 2 3 4 55 66 77]
 
     // Copy a slice to the end of itself.
-    fmt.Println("Before append to self:", slice)
+    fmt.Println("Before append to self:", slice) // Before append to self: [1 2 3 4 55 66 77]
     slice = append(slice, slice...)
-    fmt.Println("After append to self:", slice)
+    fmt.Println("After append to self:", slice) // After append to self: [1 2 3 4 55 66 77 1 2 3 4 55 66 77]
 
 It's worth taking a moment to think about the final one-liner of that example in detail to understand how the
 design of slices makes it possible for this simple call to work correctly.
@@ -659,14 +701,12 @@ array[0:0]
 
 has length zero (and maybe even capacity zero) but its pointer is not nil, so it is not a nil slice.
 
-☆☆☆☆☆
 As should be clear, an empty slice can grow (assuming it has non-zero capacity), but a nil slice has no array to put values in and can never grow to hold even one element.
 As should be clear, an empty slice can grow (assuming it has non-zero capacity), but a nil slice has no array to put values in and can never grow to hold even one element.
 As should be clear, an empty slice can grow (assuming it has non-zero capacity), but a nil slice has no array to put values in and can never grow to hold even one element.
-☆☆☆☆☆
 
 That said, a nil slice is functionally equivalent to a zero-length slice, even though it points to nothing. It
-has length zero and can be appended to, with allocation(不通过重新分配内存就无法被appended to). As an example, look at the one-liner above that copies
+has length zero and can be appended to, with allocation(此时一定会发生内存分配). As an example, look at the one-liner above that copies
 a slice by appending to a nil slice.
 
 =========================================================================
@@ -687,23 +727,23 @@ We can slice a string to grab a substring:
 
 usr := "/usr/ken"[0:4] // yields the string "/usr"
 
-It should be obvious now what's going on behind the scenes when we slice a string.
+It should be obvious now what's going on behind the scenes when we slice a string(可以看作是对[]byte进行了slice).
 
 We can also take a normal slice of bytes and create a string from it with the simple conversion:
 
-str := string(slice)
+str := string(slice) // 类型转换
 
 and go in the reverse direction as well:
 
 slice := []byte(usr)
 
-The array underlying a string is hidden from view; there is no way to access its contents except through the
+The array underlying a string is hidden from view(对使用者来说不可见); there is no way to access its contents except through the
 string. That means that when we do either of these conversions, a copy of the array must be made. Go takes
 care of this, of course, so you don't have to. After either of these conversions, modifications to the array
 underlying the byte slice don't affect the corresponding string.
 
 An important consequence of this slice-like design for strings is that creating a substring is very efficient. All
-that needs to happen is the creation of a two-word string header. Since the string is read-only, the original string
+that needs to happen is the creation of a two-word string header(无需cap字段). Since the string is read-only, the original string
 and the string resulting from the slice operation can share the same array safely.
 
 A historical note: The earliest implementation of strings always allocated, but when slices were added to the
@@ -720,8 +760,8 @@ allocated array. When we pass slice values around, the header gets copied but th
 
 appreciate [ə'priːʃɪeɪt; -sɪ-] vt. 欣赏；感激；领会；鉴别 vi. 增值；涨价
 
-Once you appreciate how they work, slices become not only easy to use, but powerful and expressive, especially with the
-help of the copy and append built-in functions.
+Once you appreciate(领会到) how they work, slices become not only easy to use, but powerful and expressive, especially
+with the help of the copy and append built-in functions.
 
 =========================================================================
 

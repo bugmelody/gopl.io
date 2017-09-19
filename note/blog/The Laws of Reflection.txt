@@ -1,5 +1,5 @@
 The Laws of Reflection
-[[[2-over]]] 2017-01-11 09:56:26
+[[[4-over]]] 2017-08-31 17:47:05
 
 6 September 2011
 
@@ -42,11 +42,7 @@ r = bufio.NewReader(r)
 r = new(bytes.Buffer)
 // and so on
 
-☆☆☆☆☆☆
-☆☆☆☆☆☆
 It's important to be clear that whatever concrete value r may hold, `r`'s type is always io.Reader: Go is statically typed and the static type of r is io.Reader.
-☆☆☆☆☆☆
-☆☆☆☆☆☆
 
 An extremely important example of an interface type is the empty interface:
 
@@ -87,11 +83,7 @@ and our empty interface value empty will again contain that same pair, (tty, *os
 
 (We don't need a type assertion here because it's known statically that w satisfies the empty interface. In the example where we moved a value from a Reader to a Writer, we needed to be explicit and use a type assertion because `Writer`'s methods are not a subset of `Reader`'s.)
 
-☆☆☆☆☆☆
-☆☆☆☆☆☆
 One important detail is that the pair inside an interface always has the form (value, concrete type) and cannot have the form (value, interface type). Interfaces do not hold interface values.
-☆☆☆☆☆☆
-☆☆☆☆☆☆
 
 
 Now we're ready to reflect.
@@ -166,7 +158,7 @@ var x uint8 = 'x'
 v := reflect.ValueOf(x)
 fmt.Println("type:", v.Type())                            // uint8.
 fmt.Println("kind is uint8: ", v.Kind() == reflect.Uint8) // true.
-x = uint8(v.Uint())                                       // v.Uint returns a uint64.
+x = uint8(v.Uint())                                       // v.Uint returns a uint64.必须手动转型
 
 The second property is that the Kind of a reflection object describes the underlying type, not the static type. If a reflection object contains a value of a user-defined integer type, as in
 
@@ -190,6 +182,7 @@ func (v Value) Interface() interface{}
 
 As a consequence we can say
 
+// 打印一个reflect.Value,方法1
 y := v.Interface().(float64) // y will have type float64.
 fmt.Println(y)
 
@@ -197,7 +190,8 @@ to print the float64 value represented by the reflection object v.
 
 We can do even better, though. The arguments to fmt.Println, fmt.Printf and so on are all passed as empty interface values, which are then unpacked by the fmt package internally just as we have been doing in the previous examples. Therefore all it takes to print the contents of a reflect.Value correctly is to pass the result of the Interface method to the formatted print routine:
 
-fmt.Println(v.Interface())
+// 打印一个reflect.Value,方法2
+fmt.Println(v.Interface()) // 跟上面的比起来,写法简单了很多
 
 (Why not fmt.Println(v)? Because v is a reflect.Value; we want the concrete value it holds.) Since our value is a float64, we can even use a floating-point format if we want:
 
@@ -256,6 +250,7 @@ were allowed to succeed, it would not update x, even though v looks like it was 
 
 bizarre [bɪ'zɑː] adj. 奇异的（指态度，容貌，款式等）
 garb [gɑːb] n. 服装；装束；打扮 vt. 装扮；穿衣
+
 If this seems bizarre, it's not. It's actually a familiar situation in unusual garb. Think of passing x to a function:
 
 f(x)
@@ -298,6 +293,7 @@ The output, as expected, is
 
 albeit [ɔːl'biːɪt] conj. 虽然；即使
 disguise [dɪs'gaɪz] vt. 掩饰；假装；隐瞒 n. 伪装；假装；用作伪装的东西
+
 Reflection can be hard to understand but it's doing exactly what the language does, albeit through reflection Types and Values that can disguise what's going on. Just keep in mind that reflection Values need the address of something in order to modify what they represent.
 
 Structs

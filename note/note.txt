@@ -1,3 +1,31 @@
+需要熟悉的非标准库的库
+github.com/stretchr/testify/assert
+github.com/jmoiron/sqlx
+https://github.com/mattn/go-isatty
+github.com/Masterminds/squirrel
+github.com/golang/glog
+github.com/gorilla/sessions
+==========================================
+github.com/garyburd/redigo/redis
+需要理解如下内容
+redis协议: https://redis.io/topics/protocol
+pipeline: https://redis.io/topics/pipelining
+订阅: https://redis.io/topics/pubsub到此
+事务: https://redis.io/topics/transactions
+
+sort
+https://redis.io/commands/sort#retrieving-external-keys
+http://doc.redisfans.com/key/sort.html
+==========================================
+分析httprouter的源码 http://shanshanpt.github.io/2016/05/08/httprouter.html
+==========================================
+
+文章
+https://github.com/golang/go/wiki/CodeReviewComments
+==========
+https://gowebexamples.com/
+==========
+http://www.chingli.com/coding/understanding-go-web-app/
 ==========
 http://docs.studygolang.com/doc/effective_go.html#pointers_vs_values
 ==========
@@ -6,6 +34,149 @@ http://docs.studygolang.com/doc/effective_go.html#generality
 http://docs.studygolang.com/doc/effective_go.html#embedding
 ==========
 http://docs.studygolang.com/doc/effective_go.html#concurrency
+==========
+http://localhost:6060/blog/go-slices-usage-and-internals
+
+A possible "gotcha"
+
+As mentioned earlier, re-slicing a slice doesn't make a copy of the underlying array. The full array will be kept in memory until it is no longer referenced. Occasionally this can cause the program to hold all the data in memory when only a small piece of it is needed.
+
+For example, this FindDigits function loads a file into memory and searches it for the first group of consecutive numeric digits, returning them as a new slice.
+
+var digitRegexp = regexp.MustCompile("[0-9]+")
+
+func FindDigits(filename string) []byte {
+    b, _ := ioutil.ReadFile(filename)
+    return digitRegexp.Find(b)
+}
+
+This code behaves as advertised, but the returned []byte points into an array containing the entire file. Since the slice references the original array, as long as the slice is kept around the garbage collector can't release the array; the few useful bytes of the file keep the entire contents in memory.
+
+To fix this problem one can copy the interesting data to a new slice before returning it:
+
+func CopyDigits(filename string) []byte {
+    b, _ := ioutil.ReadFile(filename)
+    b = digitRegexp.Find(b)
+    c := make([]byte, len(b))
+    copy(c, b)
+    return c
+}
+
+A more concise version of this function could be constructed by using append. This is left as an exercise for the reader. 
+==========
+对字符串来说也是一样
+there is a well-known gotcha in Java and other languages that when you slice a string to save a small piece, the reference to the original keeps the entire original string in memory even though only a small amount is still needed. Go has this gotcha too.
+
+在java和其他语言中有一个著名的的gotcha:当你slice一个很大的string s,得到了一个很小的块 x.
+原来指向s的引用会导致整个s一直在内存中存在,即使s中只有x是你需要的.
+go也同样有这个问题.
+ 
+ 参考: https://research.swtch.com/godata
+==========
+来自go faq : Should I define methods on values or pointers?  中有这样一段
+ 
+First, and most important, does the method need to modify the receiver?
+If it does, the receiver must be a pointer.
+(Slices and maps act as references, so their story is a little more subtle, but for
+instance to change the length of a slice in a method the receiver must still be a pointer.)
+==========
+来自go faq : Why do T and *T have different method sets?
+http://docs.studygolang.com/doc/faq#different_method_sets
+==========
+github.com/firstrow/tcp_server 这个包有bug,server.OnNewMessage设置的回调不会被调用
+但是里面有个有趣的现象,包内server结构体是非导出的,但是其方法OnNewClient,OnNewMessage仍然可以被外部包使用
+==========
+One adjustment godoc does do is to display indented text in a fixed-width font, suitable for program snippets. ( 来自effective go)
+==========
+来自effective go
+
+type T struct {
+    a int
+    b float64
+    c string
+}
+
+func (t *T) String() string {
+    return fmt.Sprintf("%d/%g/%q", t.a, t.b, t.c)
+}
+
+If you need to print values of type T as well as pointers to T,
+the receiver for String must be of value type; this example used a pointer because
+that's more efficient and idiomatic for struct types.
+See the section below on <a href="#pointers_vs_values">pointers vs. value receivers</a> for more information.)
+
+如果你需要打印类型为T的值,同时需要打印类型为*T的值,那么String的接收者必须为值类型的;这个例子使
+用了指针,是因为这对于结构体类型更加有效和符合语言习惯
+
+pointers vs. value receivers 一节中提到
+The rule about pointers vs. values for receivers is that value methods can be invoked
+on pointers and values, but pointer methods can only be invoked on pointers. This is
+because pointer methods can modify the receiver; invoking them on a copy of the value
+would cause those modifications to be discarded.
+==========
+http://www.jianshu.com/p/2de7a1f22b1a
+什么是 reslice?
+We can also reslice, which is to say slice a slice and store the result back in the original slice structure.(blog) 
+==========
+==========
+==========
+==========
+==========
+==========
+==========
+==========
+==========
+==========
+==========
+==========
+==========
+==========
+==========
+==========
+==========
+==========
+==========
+==========
+==========
+==========
+==========
+==========
+==========
+==========
+==========
+==========
+==========
+==========
+==========
+==========
+==========
+==========
+==========
+==========
+==========
+==========
+==========
+==========
+==========
+==========
+==========
+==========
+==========
+==========
+==========
+==========
+==========
+==========
+==========
+==========
+==========
+==========
+==========
+==========
+==========
+==========
+==========
+==========
 ==========
 ==========
 ==========

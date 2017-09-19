@@ -23,7 +23,7 @@ func spinner(delay time.Duration) {
 	for {
 		for _, r := range `-\|/` {
 			// %c: the character represented by the corresponding Unicode code point
-			// ?? \r 是什么
+			//  \r 是什么,用于实现console中字符转圈的效果
 			fmt.Printf("\r%c", r)
 
 			/**

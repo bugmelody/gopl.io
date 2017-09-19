@@ -1,11 +1,13 @@
 The Go Memory Model
-[[[1-over]]] 2016-12-24 19:13:23
+[[[2-over]]] 2017-3-14 21:25:36 难度: ★★★★★
 Version of May 31, 2014
 
 Introduction
 
 The Go memory model specifies the conditions under which reads of a variable in one goroutine can be guaranteed
 to observe values produced by writes to the same variable in a different goroutine.
+<<The Go memory model>>描述的是什么问题?
+它描述了在什么条件下,在b线程中写入变量x的效果,一定会被线程a观察到.
 
 
 Advice
@@ -99,7 +101,6 @@ r2 之前的写入为 w2，但与其并发的有 w4，因此 r2 的值是不确�
 ==============================================================
 ==============================================================
 ==============================================================
-
 Synchronization
 
 Initialization
@@ -170,7 +171,7 @@ A send on a channel happens before the corresponding receive from that channel c
 
 This program:
 
-var c = make(chan int, 10)
+var c = make(chan int, 10) // 有缓冲
 var a string
 
 func f() {
@@ -189,14 +190,13 @@ happens before the corresponding receive on c completes, which happens before th
 
 The closing of a channel happens before a receive that returns a zero value because the channel is closed.
 In the previous example, replacing c <- 0 with close(c) yields a program with the same guaranteed behavior.
-(qc注: 接收操作 <-c 会阻塞,直到收到值或者channel已经被close)
 
 A receive from an unbuffered channel happens before the send on that channel completes.
 怎么理解上面这句话???
 
 This program (as above, but with the send and receive statements swapped and using an unbuffered channel):
 
-var c = make(chan int)
+var c = make(chan int) // 无缓冲
 var a string
 
 func f() {
@@ -238,9 +238,12 @@ func main() {
 			<-limit
 		}(w)
 	}
-	select{} // 空的 select 是什么意思???
+	select{} // 空的 select 是什么意思??? A select with no cases, select{}, waits forever.
 }
 
+==============================================================
+==============================================================
+==============================================================
 Locks
 
 The sync package implements two lock data types, sync.Mutex and sync.RWMutex.
@@ -350,6 +353,7 @@ func main() {
 it can happen that g prints 2 and then 0.
 
 This fact invalidates a few common idioms.
+invalidate [ɪn'vælɪdeɪt] vt. 使无效；使无价值
 
 Double-checked locking is an attempt to avoid the overhead of synchronization.
 二次检查加锁 (double-checked locking) 是一种为了避免同步带来的开销而尝试的举措.

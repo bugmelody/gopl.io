@@ -37,7 +37,7 @@ func main() {
 func printStack() {
 	// 声明一个 byte 数组,长度为 4096
 	var buf [4096]byte
-	// runtime.Stack 要求第一个参数是 []byte, 这里必须进行切片操作
+	// runtime.Stack 要求第一个参数是 []byte, 这里必须从buf这个数组进行切片操作
 
 	// Stack formats a stack trace of the calling goroutine into buf
 	// and returns the number of bytes written to buf.

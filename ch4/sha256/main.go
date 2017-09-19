@@ -26,6 +26,9 @@ func main() {
 	//
 	// byte is an alias for uint8, 因此会输出 [32]uint8
 	//
+	// %x是将byte的每个字节输出为两个16进制的数字
+	// 2d 71 16 42 b7
+	//
 	// Output:
 	// 2d711642b726b04401627ca9fbac32f5c8530fb1903cc4db02258717921a4881
 	// 4b68ab3847feda7d6c62c1fbcbeebfa35eab7351ed5e78f4ddadea5df64b8015

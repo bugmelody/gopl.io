@@ -18,6 +18,7 @@ func intsToString(values []int) string {
 	buf.WriteByte('[')
 	for i, v := range values {
 		if i > 0 {
+			// 不是第一次循环,添加逗号
 			buf.WriteString(", ")
 		}
 		fmt.Fprintf(&buf, "%d", v)

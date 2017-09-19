@@ -125,7 +125,14 @@ http://stackoverflow.com/questions/33908307/go-get-not-fetching-all-dependencies
 What do three dots “./…” mean in Go command line invocations?
 http://stackoverflow.com/questions/28031603/what-do-three-dots-mean-in-go-command-line-invocations
 ======================================================================================================
+blog系列文章
 http://www.alexedwards.net/blog/category/golang
+
+HTTP Response Snippets for Go
+http://www.alexedwards.net/blog/golang-response-snippets
+======================================================================================================
+blog系列文章
+http://www.devdungeon.com/tags/go
 ======================================================================================================
 http://www.iteye.com/news/31583
 ======================================================================================================
@@ -163,3 +170,17 @@ https://github.com/StefanSchroeder/Golang-Regex-Tutorial
 【go语言】修改URL中的query失效的原因
 http://rongmayisheng.com/post/%E3%80%90go%E8%AF%AD%E8%A8%80%E3%80%91%E4%BF%AE%E6%94%B9url%E4%B8%AD%E7%9A%84query%E5%A4%B1%E6%95%88%E7%9A%84%E5%8E%9F%E5%9B%A0
 ======================================================================================================
+Example of doing a multipart upload in Go (golang)
+https://gist.github.com/mattetti/5914158
+======================================================================================================
+理解Go语言Web编程
+http://www.chingli.com/coding/understanding-go-web-app/
+======================================================================================================
+Rob Pike谈Google Go：并发，Type System，内存管理和GC
+http://www.infoq.com/cn/interviews/pike-google-go-cn
+======================================================================================================
+组织db访问
+http://www.alexedwards.net/blog/organising-database-access
+======================================================================================================
+使用Go实现TLS 服务器和客户端
+http://colobu.com/2016/06/07/simple-golang-tls-examples/

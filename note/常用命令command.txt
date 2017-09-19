@@ -1,0 +1,55 @@
+$ godoc -http=:6060
+
+$ godoc builtin
+$ go doc os Getwd
+
+
+==========================================
+go build -o chat
+./chat
+==========================================
+go test -cover
+Provided that all tests pass, adding the -cover flag will tell us how
+much of our code was touched during the execution of the tests.
+Obviously, the closer we get to 100 percent the better.
+==========================================
+$ go test -run=TestConcurrent -race -v gopl.io/ch9/memo1
+
+-run=xxx
+指定要运行的函数
+
+-race
+启动race detector
+==========================================
+$ go env
+==========================================
+$ go test -v
+==========================================
+the -run flag, whose argument is a regular expression, causes go test to run only those tests whose function name matches the pattern:
+$ go test -v -run="French|Canal"
+运行函数名包含French或Canal的测试
+==========================================
+-run 指定了运行哪个测试
+$ go test -v -run=Coverage -coverprofile=c.out
+=== RUN   TestCoverage
+--- PASS: TestCoverage (0.00s)
+PASS
+coverage: 63.8% of statements
+ok  	gopl.io/ch7/eval	0.002s
+
+If all you need is the summary, use 'go test -cover'
+==========================================
+生成覆盖率测试报告的html
+$ go tool cover -html=c.out
+==========================================
+$ go test -bench=.
+$ go test -bench=. -benchmem # 显示内存分配情况
+==========================================
+$ go test -cpuprofile=cpu.out
+$ go test -blockprofile=block.out
+$ go test -memprofile=mem.out
+==========================================
+==========================================
+
+
+

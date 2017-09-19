@@ -1,4 +1,5 @@
 // http://localhost:6060/doc/codewalk/sharemem/
+// [[[3-over]]] 2017-9-15 10:25:39
 
 /**
 Introduction
@@ -30,10 +31,10 @@ import (
 )
 
 const (
-	numPollers     = 2                // number of Poller goroutines to launch
+	numPollers     = 2                // number of Poller goroutines to launch , 有多少个轮训者
 	pollInterval   = 60 * time.Second // how often to poll each URL
 	statusInterval = 10 * time.Second // how often to log status to stdout
-	errTimeout     = 10 * time.Second // back-off timeout on error
+	errTimeout     = 10 * time.Second // back-off(回退机制) timeout on error
 )
 
 var urls = []string{
@@ -64,10 +65,10 @@ The StateMonitor receives State values on a channel and periodically outputs
 the state of all Resources being polled by the program.
 */
 
-// StateMonitor maintains a map that stores the state of the URLs being
+// StateMonitor maintains a map(指urlStatus) that stores the state of the URLs being
 // polled, and prints the current state every updateInterval nanoseconds(纳秒).
 // It returns a chan State to which resource state should be sent.
-// 返回值类型: chan<- State, 这是一个用于发送的channel
+// 返回值类型: chan<- State, 这是一个用于发送的channel,返回的chan只能被send
 func StateMonitor(updateInterval time.Duration) chan<- State {
 	/**
 	注:The updates channel
@@ -85,13 +86,6 @@ func StateMonitor(updateInterval time.Duration) chan<- State {
 	注:The Ticker object
 	A time.Ticker is an object that repeatedly sends a value on a channel at a specified interval.
 	In this case, ticker triggers the printing of the current state to standard output every updateInterval nanoseconds.
-	--------
-	Ticker 说明:
-	// A Ticker holds a channel that delivers `ticks' of a clock at intervals.
-	type Ticker struct {
-		C <-chan Time // The channel on which the ticks are delivered.   导出的
-		r runtimeTimer                                                   // 未导出
-	}
 	*/
 	ticker := time.NewTicker(updateInterval)
 	/**
@@ -101,6 +95,7 @@ func StateMonitor(updateInterval time.Duration) chan<- State {
 	When StateMonitor receives a tick from ticker.C, it calls logState to print the current state.
 	When it receives a State update from updates, it records the new status in the urlStatus map.
 	Notice that this goroutine owns the urlStatus data structure, ensuring that it can only be accessed sequentially.
+	也就是说,urlStatus这个map变量,被限制到了只能在下面的这个goroutine中被访问
 	This prevents memory corruption issues that might arise from parallel reads and/or writes to a shared map.
 	*/
 	go func() {
@@ -148,14 +143,14 @@ error and returns the error string instead.
 // Poll executes an HTTP HEAD request for url
 // and returns the HTTP status string or an error string.
 func (r *Resource) Poll() string {
-	/* http.Head 函数原型: func Head(url string) (resp *Response, err error) */
 	resp, err := http.Head(r.url)
 	if err != nil {
-		log.Println("Error", r.url, err) // 屏幕上输出 error,说明是刚刚进行了实际的head请求却失败
+		// HEAD请求出错
+		log.Println("Error", r.url, err)
 		r.errCount++
 		return err.Error()
 	}
-	// r.errCount: the number of errors encountered since the last successful poll
+	// 限制,HEAD请求成功
 	r.errCount = 0
 	return resp.Status
 }
@@ -172,10 +167,8 @@ upon which it sends its return value (or other indication of completed state).
 // Sleep sleeps for an appropriate interval (dependent on error state)
 // before sending the Resource to done.
 func (r *Resource) Sleep(done chan<- *Resource) {
-	/* 参数: done chan<- *Resource , 这是一个用于接收的 channel */
-	/**
-	time.Duration(r.errCount): 这是一个类型转换
-	*/
+	/* 参数: done chan<- *Resource , 这是一个用于send的 channel */
+	// time.Duration(r.errCount): 这是一个类型转换
 	time.Sleep(pollInterval + errTimeout*time.Duration(r.errCount)) // 错误次数越多,睡得越久
 	done <- r
 }
@@ -198,16 +191,18 @@ Finally, it sends the Resource pointer to the out channel. This can be interpret
 saying "I'm done with this Resource" and returning ownership of it to the main goroutine.
 
 Several goroutines run Pollers, processing Resources in parallel.
+
+in就是main中的pending
+out就是main中的complete
 */
 func Poller(in <-chan *Resource, out chan<- *Resource, status chan<- State) {
-	// 这里 in 是指函数参数
 	for r := range in {
-		s := r.Poll() /* 返回的是: status string or an error string */
+		s := r.Poll() // 返回的是: status string or an error string
 
 		status <- State{r.url, s} // sends a State value to the status channel, to inform the StateMonitor of the result of the Poll.
 
-		/* Finally, it sends the Resource pointer to the out channel. This can be interpreted as the Poller
-		saying "I'm done with this Resource" and returning ownership of it to the main goroutine.	*/
+		// Finally, it sends the Resource pointer to the out channel. This can be interpreted as the
+		// Poller saying "I'm done with this Resource" and returning ownership of it to the main goroutine.
 		out <- r /* in 的参数声明是 in <-chan *Resource, 通过 range 得到的 r 类型为 *Resource */
 	}
 }
@@ -258,10 +253,14 @@ func main() {
 	Send Resources to pending
 	To add the initial work to the system, main starts a new goroutine that allocates and sends one Resource per URL to pending.
 	The new goroutine is necessary because unbuffered channel sends and receives are synchronous.
+	必须要启动一个goroutine来进行send,因为pending是非缓冲chan
 	That means these channel sends will block until the Pollers are ready to read from pending.
+	也就是说send到pending的动作会阻塞,直到Pollers准备读取
 
 	Were these sends performed in the main goroutine with fewer Pollers than channel sends, the program would reach a deadlock
-	situation, because main would not yet be receiving from complete.??????????????????????????????????????????????????
+	situation, because main would not yet be receiving from complete.
+	如果相反的,send操作没有在新goroutine中,而是在main goroutine中直接进行send操作,要是碰上Pollers比较少的情况下,
+	整个程序会达到死锁状态,因为没有什么东东会从complete进行接收操作,造成pending这个chan一直处于被占用状态
 
 	Exercise for the reader: modify this part of the program to read a list of URLs from a file.
 	(You may want to move this goroutine into its own named function.)
@@ -279,21 +278,21 @@ func main() {
 	When a Poller is done with a Resource, it sends it on the complete channel.
 	This loop receives those Resource pointers from complete.
 	For each received Resource, it starts a new goroutine calling the Resource's Sleep method.
-	Using a new goroutine for each ensures that the sleeps can happen in parallel.
+	Using a new goroutine for each ensures that the sleeps can happen in parallel(而不会阻塞complete channel中的后来者).
 
 	Note that any single Resource pointer may only be sent on either pending or complete at any one time.
 	This ensures that a Resource is either being handled by a Poller goroutine or sleeping, but never both simultaneously.
 	In this way, we share our Resource data by communicating.
 	*/
 	for r := range complete {
-		/* 当Sleep睡完之后,会向pending这个channel发送消息 */
+		/* 当Sleep睡完之后,会向pending这个channel发送消息,也就是说会重新进行轮训 */
 		go r.Sleep(pending)
 	}
 	/**
 	RangeClause = [ ExpressionList "=" | IdentifierList ":=" ] "range" Expression .
 	For channels, the iteration values produced are the successive values sent on the channel until the channel is closed. If
 	the channel is nil, the range expression blocks forever.
-	因此,上面的 for ... range ... 是一个死循环
+	因此,上面的 for ... range ... 是一个死循环,直到channel被close
 	 */
 
 

@@ -9,7 +9,7 @@ import (
 
 func main() {
 	sample := "\xbd\xb2\x3d\xbc\x20\xe2\x8c\x98"
-	// sample2 := []byte("\xbd\xb2\x3d\xbc\x20\xe2\x8c\x98")
+	// sample := []byte("\xbd\xb2\x3d\xbc\x20\xe2\x8c\x98") 
 
 	fmt.Println("Println:")
 	fmt.Println(sample)

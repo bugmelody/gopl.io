@@ -15,7 +15,8 @@ func main() {
 
 func f(x int) {
 	// 注意,这里的 x+0/x, 其实是 x+(0/x), (0/x) 在 x 不为零的情况下为 0
-	// 当调用 x+0/0 的时候, 直接 panic, 不会再执行 defer fmt.Printf("defer %d\n", 0) 
+	// 当调用 x+0/0 的时候, 直接 panic, 不会再执行 defer fmt.Printf("defer %d\n", 0) , 因为defer是在下一行
+	// 因此,输出中,没有'defer 0'
 	fmt.Printf("f(%d)\n", x+0/x) // panics if x == 0
 	defer fmt.Printf("defer %d\n", x)
 	f(x - 1)

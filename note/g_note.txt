@@ -1,0 +1,3555 @@
+windows安装:
+1.安装位置	C:\Go
+2.If you chose a directory other than c:\Go, you must set the GOROOT environment variable to your chosen path.
+3.Add the bin subdirectory of your Go root (for example, c:\Go\bin) to your PATH environment variable.
+4.The GOPATH environment variable
+The GOPATH environment variable specifies the location of your workspace. It is likely the only environment
+variable you'll need to set when developing Go code.
+5.For convenience, add the workspace's bin subdirectory to your PATH:
+$ export PATH=$PATH:$GOPATH/bin
+liteide配置:
+查看=>编辑环境变量,修改:GOROOT=D:\go
+#######
+#######
+如果一个method的receiver是 *T ,你可以在一个 T 类型的实例变量 V 上面调用这个method，而不需要 &V 去调用这个method
+如果一个method的receiver是 T ，你可以在一个 *T 类型的变量 P 上面调用这个method，而不需要 *P 去调用这个method
+#######
+// 编译器会根据初始化的值自动推导出相应的类型
+vname1, vname2, vname3 := v1, v2, v3
+简短声明,只能用在函数内部；在函数外部使用则会无法编译通过，所以一般用var方式来定义全局变量。
+#######
+常量定义:
+const constantName = value
+//如果需要，也可以明确指定常量的类型：
+const Pi float32 = 3.1415926
+#######
+如下的代码会产生错误：invalid operation: a + b (mismatched types int8 and int32)
+var a int8
+var b int32
+c := a + b
+另外，尽管int的长度是32 bit, 但int 与 int32并不可以互用
+#######
+在Go中字符串是不可变的，例如下面的代码编译时会报错：cannot assign to s[0]
+var s string = "hello"
+s[0] = 'c'
+但如果真的想要修改怎么办呢？下面的代码可以实现：
+
+s := "hello"
+c := []byte(s)  // 将字符串 s 转换为 []byte 类型
+c[0] = 'c'
+s2 := string(c)  // 再转换回 string 类型
+fmt.Printf("%s\n", s2)
+
+修改字符串也可写为：
+
+s := "hello"
+s = "c" + s[1:] // 字符串虽不能更改，但可进行切片操作
+fmt.Printf("%s\n", s)
+#######
+如果要声明一个多行的字符串怎么办？可以通过`来声明：
+
+m := `hello
+    world`
+` 括起的字符串为Raw字符串，即字符串在代码中的形式就是打印时的形式，它没有字符转义，换行也将原样输出。
+#######
+iota枚举
+Go里面有一个关键字iota，这个关键字用来声明enum的时候采用，它默认开始值是0，每调用一次加1：
+
+const(
+    x = iota  // x == 0
+    y = iota  // y == 1
+    z = iota  // z == 2
+    w  // 常量声明省略值时，默认和之前一个值的字面相同。这里隐式地说w = iota，因此w == 3。其实上面y和z可同样不用"= iota"
+)
+
+const v = iota // 每遇到一个const关键字，iota就会重置，此时v == 0
+
+const (
+  e, f, g = iota, iota, iota //e=0,f=0,g=0 iota在同一行值相同
+)
+#######
+由于长度也是数组类型的一部分，因此 [3]int 与 [4]int 是不同的类型，数组也就不能改变长度。
+数组之间的赋值是值的赋值，即当把一个数组作为参数传入函数的时候，传入的其实是该数组的副本，而不是它的指针。
+如果要使用指针，那么需要用到slice类型
+#######
+b := [10]int{1, 2, 3} // 声明了一个长度为10的int数组，其中前三个元素初始化为1、2、3，其它默认为0
+#######
+c := [...]int{4, 5, 6} // 可以省略长度而采用`...`的方式，Go会自动根据元素个数来计算长度
+注意,这是数组声明,而不是 slice 声明
+#######
+试试看是多少,为什么?
+var array = [10]byte{'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'}
+var aSlice []byte
+aSlice = array[3:7]
+
+fmt.Println(len(aSlice))      // 输出 4
+fmt.Println(cap(aSlice))      // 输出 7
+
+因为:
+cap:最大长度，也就是slice开始位置到数组的最后位置的长度
+
+#######
+对于slice有几个有用的内置函数：
+
+len 获取slice的长度
+cap 获取slice的最大容量
+append 向slice里面追加一个或者多个元素，然后返回一个和slice一样类型的slice
+copy 函数 copy 从源slice的src中复制元素到目标dst，并且返回复制的元素的个数
+注：append函数会改变slice所引用的数组的内容，从而影响到引用同一数组的其它slice。
+但当slice中没有剩余空间（即(cap-len) == 0）时，此时将动态分配新的数组空间。
+返回的slice数组指针将指向这个新分配的空间，而原数组的内容将保持不变；其它引用此数组的slice则不受影响。
+
+#######
+map的读取和设置也类似slice一样，通过key来操作，只是slice的index只能是｀int｀类型，而map多了
+很多类型，可以是int，可以是string及所有完全定义了==与!=操作的类型。
+
+// 声明一个 key 是字符串，值为int的字典,这种方式的声明需要在使用之前使用make初始化
+var numbers map[string] int
+// 另一种map的声明方式
+numbers := make(map[string]int)
+
+map的长度是不固定的，也就是和slice一样，也是一种引用类型
+内置的 len 函数同样适用于map，返回map拥有的key的数量
+map和其他基本型别不同，它不是thread-safe，在多个go-routine存取时，必须使用mutex lock机制
+#######
+Go函数支持变参。接受变参的函数是有着不定数量的参数的。为了做到这点，首先需要定义函数使其接受变参：
+
+func myfunc(arg ...int) {}
+arg ...int告诉Go这个函数接受不定数量的参数。注意，这些参数的类型全部是int。在函数体中，变量arg是一个int的slice：
+
+for _, n := range arg {
+    fmt.Printf("And the number is: %d\n", n)
+}
+#######
+Go语言中string，slice，map这三种类型的实现机制类似指针，所以可以直接传递，而不用取地址后传递指针。
+（注：若函数需改变slice的长度，则仍需要取地址传递指针）
+[[qc注:把slice想象成数据结构,拥有 len,data,cap 三个属性,因此若不传指针,只改变了 data,len没有被改变]]
+#######
+函数作为值、类型
+
+在Go中函数也是一种变量，我们可以通过type来定义它，它的类型就是所有拥有相同的参数，相同的返回值的一种类型
+
+type typeName func(input1 inputType1 , input2 inputType2 [, ...]) (result1 resultType1 [, ...])
+
+函数作为类型到底有什么好处呢？那就是可以把这个类型的函数当做值来传递，请看下面的例子
+
+package main
+import "fmt"
+
+type testInt func(int) bool // 声明了一个函数类型
+
+func isOdd(integer int) bool {
+    if integer%2 == 0 {
+        return false
+    }
+    return true
+}
+
+func isEven(integer int) bool {
+    if integer%2 == 0 {
+        return true
+    }
+    return false
+}
+
+// 上面声明的函数类型在这个地方被当做了一个参数
+
+func filter(slice []int, f testInt) []int {
+    var result []int
+    for _, value := range slice {
+        if f(value) {
+            result = append(result, value)
+        }
+    }
+    return result
+}
+
+func main(){
+    slice := []int {1, 2, 3, 4, 5, 7}
+    fmt.Println("slice = ", slice)
+    odd := filter(slice, isOdd)    // 函数当做值来传递了
+    fmt.Println("Odd elements of slice are: ", odd)
+    even := filter(slice, isEven)  // 函数当做值来传递了
+    fmt.Println("Even elements of slice are: ", even)
+}
+函数当做值和类型在我们写一些通用接口的时候非常有用，通过上面例子我们看到testInt这个类型是一个函数类型，然后两个filter函数
+的参数和返回值与testInt类型是一样的，但是我们可以实现很多种的逻辑，这样使得我们的程序变得非常的灵活。
+#######
+Panic和Recover
+
+Go没有像Java那样的异常机制，它不能抛出异常，而是使用了panic和recover机制。一定要记住，你应当把它作为最后的手段来使用，
+也就是说，你的代码中应当没有，或者很少有panic的东西。这是个强大的工具，请明智地使用它。那么，我们应该如何使用它呢？
+
+Panic
+
+是一个内建函数，可以中断原有的控制流程，进入一个令人恐慌的流程中。当函数F调用panic，函数F的执行被中断，但是F中的
+延迟函数会正常执行，然后F返回到调用它的地方。在调用的地方，F的行为就像调用了panic。
+这一过程继续向上，直到发生panic的goroutine中所有调用的函数返回，此时程序退出。
+恐慌可以直接调用panic产生。也可以由运行时错误产生，例如访问越界的数组。
+
+Recover
+
+是一个内建的函数，可以让进入令人恐慌的流程中的 goroutine 恢复过来。recover仅在延迟函数中有效。
+[[qc注:recover仅在延迟函数中有效]]
+
+在正常的执行过程中，调用recover会返回nil，并且没有其它任何效果。
+
+如果当前的goroutine陷入恐慌，调用recover可以捕获到panic的输入值，并且恢复正常的执行。
+
+下面这个函数演示了如何在过程中使用 panic
+
+var user = os.Getenv("USER")
+
+func init() {
+    if user == "" {
+        panic("no value for $USER")
+    }
+}
+下面这个函数检查作为其参数的函数在执行时是否会产生panic：
+
+func throwsPanic(f func()) (b bool) {
+    defer func() {
+        if x := recover(); x != nil {
+            // 这里修改了命名返回值
+            b = true
+        }
+    }()
+    f() //执行函数f，如果f中出现了panic，那么就可以恢复回来
+    return
+}
+#######
+main函数和init函数
+
+Go里面有两个保留的函数：init函数（能够应用于所有的package）和main函数（只能应用于package main）。
+这两个函数在定义时不能有任何的参数和返回值。
+虽然一个package里面可以写任意多个init函数，但这无论是对于可读性还是以后的可维护性来说，我们都强烈建议
+用户在一个package中每个文件只写一个init函数。
+
+Go程序会自动调用init()和main()，所以你不需要在任何地方调用这两个函数。每个package中的init函数都是可
+选的，但package main就必须包含一个main函数。
+
+程序的初始化和执行都起始于main包。如果main包还导入了其它的包，那么就会在编译时将它们依次导入。
+
+有时一个包会被多个包同时导入，那么它只会被导入一次（例如很多包可能都会用到fmt包，但它只会被导入一次，因为没有必要导入多次）
+
+当一个包被导入时，如果该包还导入了其它的包，那么会先将其它包导入进来，然后再对这些包中的包级常量和变量进行初始
+化，接着执行init函数（如果有的话），依次类推。
+
+等所有被导入的包都加载完毕了，就会开始对main包中的包级常量和变量进行初始化，然后执行main包中的init函数（如果存在的话），最
+后执行main函数。
+
+#######
+import(
+    "fmt"
+)
+然后我们代码里面可以通过如下的方式调用
+
+fmt.Println("hello world")
+上面这个fmt是Go语言的标准库，其实是去GOROOT环境变量指定目录下去加载该模块，
+当然Go的import还支持如下两种方式来加载自己写的模块：
+
+相对路径
+
+import “./model” //当前文件同一目录的model目录，但是不建议这种方式来import
+
+绝对路径
+
+import “shorturl/model” //加载gopath/src/shorturl/model模块
+
+上面展示了一些import常用的几种方式，但是还有一些特殊的import，让很多新手很费解，下面我们来一一讲解一下到底是怎么一回事
+
+点操作
+
+我们有时候会看到如下的方式导入包
+
+import(
+    . "fmt"
+)
+这个点操作的含义就是这个包导入之后在你调用这个包的函数时，你可以省略前缀的包名，
+也就是前面你调用的fmt.Println("hello world")可以省略的写成Println("hello world")
+
+别名操作
+
+别名操作顾名思义我们可以把包命名成另一个我们用起来容易记忆的名字
+
+import(
+    f "fmt"
+)
+别名操作的话调用包函数时前缀变成了我们的前缀，即f.Println("hello world")
+
+_操作
+
+这个操作经常是让很多人费解的一个操作符，请看下面这个import
+
+import (
+    "database/sql"
+    _ "github.com/ziutek/mymysql/godrv"
+)
+_操作其实是引入该包，而不直接使用包里面的函数，而是调用了该包里面的init函数。
+#######
+我们知道interface的变量里面可以存储任意类型的数值(该类型实现了interface)。那么我们怎么反向
+知道这个变量里面实际保存了的是哪个类型的对象呢？目前常用的有两种方法
+Comma-ok断言
+Go语言里面有一个语法，可以直接判断是否是该类型的变量： value, ok = element.(T)，这里value就是变量的
+值，ok是一个bool类型，element是interface变量，T是断言的类型。
+
+如果element里面确实存储了T类型的数值，那么ok返回true，否则返回false。
+让我们通过一个例子来更加深入的理解。
+package main
+import (
+    "fmt"
+    "strconv"
+)
+type Element interface{}
+type List [] Element
+type Person struct {
+    name string
+    age int
+}
+//定义了String方法，实现了fmt.Stringer
+func (p Person) String() string {
+    return "(name: " + p.name + " - age: "+strconv.Itoa(p.age)+ " years)"
+}
+func main() {
+    list := make(List, 3)
+    list[0] = 1 // an int
+    list[1] = "Hello" // a string
+    list[2] = Person{"Dennis", 70}
+
+    for index, element := range list {
+        if value, ok := element.(int); ok {
+            fmt.Printf("list[%d] is an int and its value is %d\n", index, value)
+        } else if value, ok := element.(string); ok {
+            fmt.Printf("list[%d] is a string and its value is %s\n", index, value)
+        } else if value, ok := element.(Person); ok {
+            fmt.Printf("list[%d] is a Person and its value is %s\n", index, value)
+        } else {
+            fmt.Printf("list[%d] is of a different type\n", index)
+        }
+    }
+}
+是不是很简单啊，同时你是否注意到了多个if里面，还记得我前面介绍流程时讲过，if里面允许初始化变量。
+也许你注意到了，我们断言的类型越多，那么if else也就越多，所以才引出了下面要介绍的switch。
+switch测试
+最好的讲解就是代码例子，现在让我们重写上面的这个实现
+    for index, element := range list{
+        switch value := element.(type) {
+            case int:
+                fmt.Printf("list[%d] is an int and its value is %d\n", index, value)
+            case string:
+                fmt.Printf("list[%d] is a string and its value is %s\n", index, value)
+            case Person:
+                fmt.Printf("list[%d] is a Person and its value is %s\n", index, value)
+            default:
+                fmt.Println("list[%d] is of a different type", index)
+        }
+    }
+这里有一点需要强调的是：element.(type)语法不能在switch外的任何逻辑里面使用，如果你要在switch外面判断一个类型就使用comma-ok。
+
+#######
+如果一个method的receiver是 *T ,你可以在一个 T 类型的实例变量 V 上面调用这个method，而不需要 &V 去调用这个method
+如果一个method的receiver是 T ，你可以在一个 *T 类型的变量 P 上面调用这个method，而不需要 *P 去调用这个method
+#######
+反射
+
+Go语言实现了反射，所谓反射就是能检查程序在运行时的状态。我们一般用到的包是reflect包。如何运用reflect包，官方(laws of reflection)详细
+的讲解了reflect包的实现原理，
+使用reflect一般分成三步，下面简要的讲解一下：
+
+要去反射是一个类型的值(这些值都实现了空interface)，首先需要把它转
+化成reflect对象(reflect.Type或者reflect.Value，根据不同的情况调用不同的函数)。这两种获取方式如下：
+
+t := reflect.TypeOf(i)    //得到类型的元数据,通过t我们能获取类型定义里面的所有元素
+v := reflect.ValueOf(i)   //得到实际的值，通过v我们获取存储在里面的值，还可以去改变值
+
+转化为reflect对象之后我们就可以进行一些操作了，也就是将reflect对象转化成相应的值，例如
+
+tag := t.Elem().Field(0).Tag  //获取定义在struct里面的标签
+name := v.Elem().Field(0).String()  //获取存储在第一个字段里面的值
+
+获取反射值能返回相应的类型和数值
+
+var x float64 = 3.4
+v := reflect.ValueOf(x)
+fmt.Println("type:", v.Type())
+fmt.Println("kind is float64:", v.Kind() == reflect.Float64)
+fmt.Println("value:", v.Float())
+
+最后，反射的话，那么反射的字段必须是可修改的，我们前面学习过传值和传引用，这个里面也是一样的道理。反射的字段必须是可读写
+的意思是，如果下面这样写，那么会发生错误
+var x float64 = 3.4
+v := reflect.ValueOf(x)
+v.SetFloat(7.1)
+
+如果要修改相应的值，必须这样写
+
+var x float64 = 3.4
+p := reflect.ValueOf(&x)
+v := p.Elem()
+v.SetFloat(7.1)
+
+============================================================
+https://github.com/astaxie/build-web-application-with-golang/blob/master/zh/02.4.md
+============================================================
+https://github.com/astaxie/build-web-application-with-golang/blob/master/zh/02.5.md
+#######
+https://github.com/astaxie/build-web-application-with-golang/blob/master/zh/02.6.md
+到此到此到此
+嵌入interface
+
+Go里面真正吸引人的是它内置的逻辑语法，就像我们在学习Struct时学习的匿名字段，多么的优雅啊，那么相同的逻辑引入到interface里面，那不是更加完美了。如果一个interface1作为interface2的一个嵌入字段，那么interface2隐式的包含了interface1里面的method。
+
+我们可以看到源码包container/heap里面有这样的一个定义
+
+type Interface interface {
+    sort.Interface //嵌入字段sort.Interface
+    Push(x interface{}) //a Push method to push elements into the heap
+    Pop() interface{} //a Pop elements that pops elements from the heap
+}
+
+我们看到sort.Interface其实就是嵌入字段，把sort.Interface的所有method给隐式的包含进来了。也就是下面三个方法：
+
+type Interface interface {
+    // Len is the number of elements in the collection.
+    Len() int
+    // Less returns whether the element with index i should sort
+    // before the element with index j.
+    Less(i, j int) bool
+    // Swap swaps the elements with indexes i and j.
+    Swap(i, j int)
+}
+
+另一个例子就是io包下面的 io.ReadWriter ，它包含了io包下面的Reader和Writer两个interface：
+
+// io.ReadWriter
+type ReadWriter interface {
+    Reader
+    Writer
+}
+
+反射
+
+Go语言实现了反射，所谓反射就是能检查程序在运行时的状态。我们一般用到的包是reflect包。如何运用reflect包，官方的这篇文章详细的讲解了reflect包的实现原理，laws of reflection
+
+使用reflect一般分成三步，下面简要的讲解一下：要去反射是一个类型的值(这些值都实现了空interface)，首先需要把它转化成reflect对象(reflect.Type或者reflect.Value，根据不同的情况调用不同的函数)。这两种获取方式如下：
+
+t := reflect.TypeOf(i)    //得到类型的元数据,通过t我们能获取类型定义里面的所有元素
+v := reflect.ValueOf(i)   //得到实际的值，通过v我们获取存储在里面的值，还可以去改变值
+
+转化为reflect对象之后我们就可以进行一些操作了，也就是将reflect对象转化成相应的值，例如
+
+tag := t.Elem().Field(0).Tag  //获取定义在struct里面的标签
+name := v.Elem().Field(0).String()  //获取存储在第一个字段里面的值
+
+获取反射值能返回相应的类型和数值
+
+var x float64 = 3.4
+v := reflect.ValueOf(x)
+fmt.Println("type:", v.Type())
+fmt.Println("kind is float64:", v.Kind() == reflect.Float64)
+fmt.Println("value:", v.Float())
+
+最后，反射的话，那么反射的字段必须是可修改的，我们前面学习过传值和传引用，这个里面也是一样的道理。反射的字段必须是可读写的意思是，如果下面这样写，那么会发生错误
+
+var x float64 = 3.4
+v := reflect.ValueOf(x)
+v.SetFloat(7.1)
+
+如果要修改相应的值，必须这样写
+
+var x float64 = 3.4
+p := reflect.ValueOf(&x)
+v := p.Elem()
+v.SetFloat(7.1)
+
+上面只是对反射的简单介绍，更深入的理解还需要自己在编程中不断的实践。
+
+
+
+
+
+
+
+
+
+#######
+https://github.com/astaxie/build-web-application-with-golang/blob/master/ebook/02.7.md
+#######
+var validPath = regexp.MustCompile("^/(edit|save|view)/([a-zA-Z0-9]+)$")
+
+The function regexp.MustCompile will parse and compile the regular expression, and return a regexp.Regexp.
+MustCompile is distinct from Compile in that it will panic if the expression compilation fails,
+while Compile returns an error as a second parameter.
+#######
+http://golang.org/ref/spec#Rune_literals
+#######
+Rune, integer, floating-point, and complex constants are collectively called numeric constants.
+#######
+The boolean truth values are represented by the predeclared constants true and false. The predeclared identifier iota denotes an integer constant.
+#######
+Constants may be typed or untyped. Literal constants, true, false, iota, and certain constant expressions
+containing only untyped constant operands are untyped.
+#######
+There are no constants denoting the IEEE-754 infinity and not-a-number values, but the math
+package's Inf, NaN, IsInf, and IsNaN functions return and test for those values at run time.
+#######
+byte        alias for uint8
+rune        alias for int32
+#######
+Strings are immutable: once created, it is impossible to change the contents of a string.
+#######
+The length of a string s (its size in bytes) can be discovered using the built-in function len.
+The length is a compile-time constant if the string is a constant.
+A string's bytes can be accessed by integer indices 0 through len(s)-1.
+It is illegal to take the address of such an element; if s[i] is the i'th byte of a string, &s[i] is invalid.
+#######
+Array types are always one-dimensional but may be composed to form multi-dimensional types.
+[2][2][2]float64  // same as [2]([2]([2]float64))
+#######
+在Go语言官方网站提供的Effective Go中曾提到匿名组合的一个小价值，值得在这里再提一
+下。首先我们可以定义如下的类型，它匿名组合了一个 log.Logger 指针：
+
+type Job struct {
+	Command string
+	*log.Logger
+}
+在合适的赋值后，我们在Job类型的所有成员方法中可以很舒适地借用所有log.Logger提
+供的方法。比如如下的写法：
+
+func (job *Job)Start() {
+	job.Log("starting now...")
+	... // 做一些事情
+	job.Log("started.")
+}
+
+对于Job的实现者来说，他甚至根本就不用意识到log.Logger类型的存在，这就是匿名组合的
+魅力所在。在实际工作中，只有合理利用才能最大发挥这个功能的价值。
+
+需要注意的是，不管是非匿名的类型组合还是匿名组合，被组合的类型所包含的方法虽然都
+升级成了外部这个组合类型的方法，但其实它们被组合方法调用时接收者并没有改变。比如上面
+这个Job例子，即使组合后调用的方式变成了job.Log(...)，但Log函数的接收者仍然是
+log.Logger指针，因此在Log中不可能访问到job的其他成员方法和变量。
+这其实也很容易理解，毕竟被组合的类型并不知道自己会被什么类型组合，当然就没法在实
+现方法时去使用那个未知的“组合者”的功能了。
+#######
+要使某个符号对其他包（package）可见（即可以访问），需要将该符号定义为以大写字母
+开头，如：
+
+type Rect struct {
+	X, Y float64
+	Width, Height float64
+}
+
+这样，Rect类型的成员变量就全部被导出了，可以被所有其他引用了Rect所在包的代码访问到。
+
+成员方法的可访问性遵循同样的规则，例如：
+
+func (r *Rect) area() float64 {
+	return r.Width * r.Height
+}
+
+这样，Rect的area()方法只能在该类型所在的包内使用。
+需要注意的一点是，Go语言中符号的可访问性是包一级的而不是类型一级的。在上面的例
+子中，尽管area()是Rect的内部方法，但同一个包中的其他类型也都可以访问到它。这样的可
+访问性控制很粗旷，很特别，但是非常实用。如果Go语言符号的可访问性是类型一级的，少不
+了还要加上friend这样的关键字，以表示两个类是朋友关系，可以访问彼此的私有成员。
+#######
+接口赋值
+
+接口赋值在Go语言中分为如下两种情况：
+1.将对象实例赋值给接口；
+2.将一个接口赋值给另一个接口。
+
+先讨论将某种类型的对象实例赋值给接口，这要求该对象实例实现了接口要求的所有方法，
+
+例如之前我们作过一个Integer类型，如下：
+
+type Integer int
+
+func (a Integer) Less(b Integer) bool {
+	return a < b
+}
+
+func (a *Integer) Add(b Integer) {
+	*a += b
+}
+
+相应地，我们定义接口 LessAdder，如下：
+
+type LessAdder interface {
+	Less(b Integer) bool
+	Add(b Integer)
+}
+
+现在有个问题：假设我们定义一个Integer类型的对象实例，怎么将其赋值给LessAdder
+接口呢？应该用下面的语句(1)，还是语句(2)呢？
+
+var a Integer = 1
+var b LessAdder = &a ... (1)
+var b LessAdder = a ... (2)
+
+答案是应该用语句(1)。原因在于，Go语言可以根据下面的函数：
+func (a Integer) Less(b Integer) bool
+
+自动生成一个新的Less()方法：
+func (a *Integer) Less(b Integer) bool {
+	return (*a).Less(b)
+}
+
+这样，类型*Integer就既存在Less()方法，也存在Add()方法，满足LessAdder接口。
+而从另一方面来说，根据
+
+func (a *Integer) Add(b Integer)
+
+这个函数无法自动生成以下这个成员方法：
+
+func (a Integer) Add(b Integer) {
+	(&a).Add(b)
+}
+
+因为(&a).Add()改变的只是函数参数a，对外部实际要操作的对象并无影响，这不符合用
+户的预期。所以，Go语言不会自动为其生成该函数。因此，类型Integer只存在Less()方法，
+缺少Add()方法，不满足LessAdder接口，故此上面的语句(2)不能赋值。
+
+为了进一步证明以上的推理，我们不妨再定义一个Lesser接口，如下：
+type Lesser interface {
+	Less(b Integer) bool
+}
+
+然后定义一个Integer类型的对象实例，将其赋值给Lesser接口：
+
+var a Integer = 1
+var b1 Lesser = &a ... (1)
+var b2 Lesser = a ... (2)
+正如我们所料的那样，语句(1)和语句(2)均可以编译通过。
+
+我们再来讨论另一种情形：将一个接口赋值给另一个接口。在Go语言中，只要两个接口拥
+有相同的方法列表（次序不同不要紧），那么它们就是等同的，可以相互赋值。
+
+下面我们来看一个示例，这是第一个接口：
+
+package one
+type ReadWriter interface {
+	Read(buf []byte) (n int, err error)
+	Write(buf []byte) (n int, err error)
+}
+
+第二个接口位于另一个包中：
+
+package two
+type IStream interface {
+	Write(buf []byte) (n int, err error)
+	Read(buf []byte) (n int, err error)
+}
+
+这里我们定义了两个接口，一个叫one.ReadWriter，一个叫two.Istream，两者都定义
+了Read()、Write()方法，只是定义次序相反。one.ReadWriter先定义了Read()再定义了
+Write()，而two.IStream反之。
+在Go语言中，这两个接口实际上并无区别，因为：
+. 任何实现了one.ReadWriter接口的类，均实现了two.IStream；
+. 任何one.ReadWriter接口对象可赋值给two.IStream，反之亦然；
+. 在任何地方使用one.ReadWriter接口与使用two.IStream并无差异。
+
+以下这些代码可编译通过：
+
+var file1 two.IStream = new(File)
+var file2 one.ReadWriter = file1
+var file3 two.IStream = file2
+
+接口赋值并不要求两个接口必须等价。如果接口A的方法列表是接口B的方法列表的子集，
+那么接口B可以赋值给接口A。
+
+例如，假设我们有Writer接口：
+
+type Writer interface {
+	Write(buf []byte) (n int, err error)
+}
+
+就可以将上面的 one.ReadWriter 和 two.IStream 接口的实例赋值给Writer接口：
+
+var file1 two.IStream = new(File)
+var file4 Writer = file1
+
+但是反过来并不成立：
+
+var file1 Writer = new(File)
+var file5 two.IStream = file1 // 编译不能通过
+
+这段代码无法编译通过，原因是显然的：file1并没有Read()方法。
+#######
+声明一个map，元素是bool型的channel:
+var m map[string] chan bool
+#######
+顾名思义，单向channel只能用于发送或者接收数据。channel本身必然是同时支持读写的，
+否则根本没法用。假如一个channel真的只能读，那么肯定只会是空的，因为你没机会往里面写数
+据。同理，如果一个channel只允许写，即使写进去了，也没有丝毫意义，因为没有机会读取里面
+的数据。所谓的单向channel概念，其实只是对channel的一种使用限制。
+
+我们在将一个channel变量传递到一个函数时，可以通过将其指定为单向channel变量，从
+而限制该函数中可以对此channel的操作，比如只能往这个channel写，或者只能从这个
+channel读。
+
+单向channel变量的声明非常简单，如下：
+
+var ch1 chan int // ch1是一个正常的channel，不是单向的
+var ch2 chan<- float64// ch2是单向channel，只用于写float64数据
+var ch3 <-chan int // ch3是单向channel，只用于读取int数据
+
+那么单向channel如何初始化呢？之前我们已经提到过，channel是一个原生类型，因此不仅
+支持被传递，还支持类型转换。只有在介绍了单向channel的概念后，读者才会明白类型转换对于
+channel的意义：就是在单向channel和双向channel之间进行转换。示例如下：
+
+ch4 := make(chan int)
+ch5 := <-chan int(ch4) // ch5就是一个单向的读取channel
+ch6 := chan<- int(ch4) // ch6 是一个单向的写入channel
+
+基于ch4，我们通过类型转换初始化了两个单向channel：单向读的ch5和单向写的ch6。
+
+为什么要做这样的限制呢？从设计的角度考虑，所有的代码应该都遵循“最小权限原则”，
+从而避免没必要地使用泛滥问题，进而导致程序失控。写过C++程序的读者肯定就会联想起const
+指针的用法。非const指针具备const指针的所有功能，将一个指针设定为const就是明确告诉
+函数实现者不要试图对该指针进行修改。单向channel也是起到这样的一种契约作用。
+
+下面我们来看一下单向channel的用法：
+func Parse(ch <-chan int) {
+	for value := range ch {
+		fmt.Println("Parsing value", value)
+	}
+}
+
+除非这个函数的实现者无耻地使用了类型转换，否则这个函数就不会因为各种原因而对ch
+进行写，避免在ch中出现非期望的数据，从而很好地实践最小权限原则。
+#######
+摘自 spec
+Constants may be typed or untyped.
+Literal constants, true, false, iota, and certain
+[constant expressions][constant expressions 这是个名词] containing only untyped constant operands
+are untyped.
+常量可以是 typed 或者 untyped
+Literal constants, true, false, iota 都是 untyped
+constant expressions,如果只含 untyped constant operands ,那么这个 constant expressions 也属于 untyped
+#######
+摘自 spec
+Method sets
+
+A type may have a method set associated with it.
+The method set of an interface type is its interface.
+The method set of any other type T consists of all methods declared with receiver type T.
+The method set of the corresponding pointer type *T is the set of all methods declared with receiver *T or T
+(that is, it also contains the method set of T).
+[*T 的 method set 包含了 *T or T 的 method set ]
+Further rules apply to structs containing anonymous fields, as described in the section on struct types.
+Any other type has an empty method set.
+
+In a method set, each method must have a unique non-blank method name.
+
+The method set of a type determines the interfaces that the type implements and
+the methods that can be called using a receiver of that type.
+#######
+The value of an uninitialized slice is nil
+#######
+摘自 spec
+A field declared with a type but no explicit field name is an anonymous field, also called an embedded field
+or an embedding of the type in the struct.
+[[[注意:所谓的 embed 在 golang 里面属于专有名词,专指 匿名 field]]]
+
+An embedded type must be specified as a type name T or as a pointer to a non-interface type name *T, and T itself
+may not be a pointer type. The unqualified type name acts as the field name.
+
+// A struct with four anonymous fields of type T1, *T2, P.T3 and *P.T4
+struct {
+	T1        // anonymous field,field name is T1
+	*T2       // anonymous field,field name is T2
+	P.T3      // anonymous field,field name is T3
+	*P.T4     // anonymous field,field name is T4
+	x, y int  // 这两个不是 anonymous field,field names are x and y
+}
+
+The following declaration is illegal because field names must be unique in a struct type:
+
+struct {
+	T     // conflicts with anonymous field *T and *P.T
+	*T    // conflicts with anonymous field T and *P.T
+	*P.T  // conflicts with anonymous field T and *T
+}
+----------
+A field or method f of an anonymous field in a struct x is called promoted
+if x.f is a legal selector that denotes that field or method f.
+
+Promoted fields act like ordinary fields of a struct except that
+they cannot be used as field names in composite literals of the struct.
+
+Given a struct type S and a type named T, promoted methods are included in the method set of the struct as follows:
+
+  If S contains an anonymous field T, the method sets of S and *S both include promoted methods with receiver T.
+  The method set of *S also includes promoted methods with receiver *T.
+  If S contains an anonymous field *T, the method sets of S and *S both include promoted methods with receiver T or *T.
+
+A field declaration may be followed by an optional string literal tag, which becomes an attribute for all
+the fields in the corresponding field declaration. The tags are made visible through a reflection interface
+and take part in type identity for structs but are otherwise ignored.
+
+// A struct corresponding to the TimeStamp protocol buffer.
+// The tag strings define the protocol buffer field numbers.
+struct {
+	microsec  uint64 "field 1"
+	serverIP6 uint64 "field 2"
+	process   string "field 3"
+}
+
+#######
+The value of an uninitialized pointer is nil
+The value of an uninitialized variable of function type is nil
+The value of an uninitialized map is nil
+The value of an uninitialized channel is nil
+#######
+An interface type specifies a method set called its interface.
+A variable of interface type can store a value of any type with a method set that is any superset of the interface.
+Such a type is said to implement the interface. The value of an uninitialized variable of interface type is nil.
+#######
+对于Map types
+The comparison operators == and != must be fully defined for operands of the key type;
+thus the key type must not be a function, map, or slice.
+If the key type is an interface type, these comparison operators must be defined for the dynamic key values;
+failure will cause a run-time panic.
+#######
+对于 map 来说:
+
+make(map[string]int, 100)
+
+The initial capacity does not bound its size: maps grow to accommodate(vt. 容纳；使适应；供应；调解) the number
+of items stored in them, with the exception of nil maps.
+A nil map is equivalent to an empty map except that no elements may be added.
+#######
+chan 的写法中,<- 操作符的结合顺序
+The <- operator associates with the leftmost chan possible:
+
+chan<- chan int    // same as chan<- (chan int),类型转换,双向转型为接受
+chan<- <-chan int  // same as chan<- (<-chan int),类型转换,发送转型为接受
+<-chan <-chan int  // same as <-chan (<-chan int)
+chan (<-chan int) // 发送 转型为 双向
+
+#######
+Type identity
+
+Two types are either identicqal or different.
+
+Two named types are identical if their type names originate in(vt. 起源于（发生于）) the same TypeSpec.
+
+A named and an unnamed type are always different.
+
+Two unnamed types are identical if the corresponding type literals are identical,
+that is, if they have the same literal structure and corresponding components have identical types. In detail:
+
+    Two array types are identical if they have identical element types and the same array length.
+    Two slice types are identical if they have identical element types.
+    Two struct types are identical if they have the same sequence of fields, and if corresponding fields
+      have the same names, and identical types, and identical tags. Two anonymous fields are considered
+      to have the same name. Lower-case field names from different packages are always different.
+    Two pointer types are identical if they have identical base types.
+    Two function types are identical if they have the same number of parameters and result values,
+      corresponding parameter and result types are identical, and either both functions are variadic
+      or neither is. Parameter and result names are not required to match.
+    Two interface types are identical if they have the same set of methods with the same names and
+      identical function types. Lower-case method names from different packages are always different.
+      The order of the methods is irrelevant.
+    Two map types are identical if they have identical key and value types.
+    Two channel types are identical if they have identical value types and the same direction.
+
+Given the declarations
+
+type (
+	T0 []string
+	T1 []string
+	T2 struct{ a, b int }
+	T3 struct{ a, c int }
+	T4 func(int, float64) *T0
+	T5 func(x int, y float64) *[]string
+)
+
+these types are identical:
+
+T0 and T0
+[]int and []int
+struct{ a, b *T5 } and struct{ a, b *T5 }
+func(x int, y float64) *[]string and func(int, float64) (result *[]string) // 仅仅是参数变量名和返回值参数变量名不同而已
+
+T0 and T1 are different because they are named types with distinct declarations;
+func(int, float64) *T0 and func(x int, y float64) *[]string are different because T0 is different from []string.
+
+#######
+Assignability
+
+A value x is assignable to a variable of type T ("x is assignable to T") in any of these cases:
+
+    x's type is identical to T.
+    x's type V and T have identical underlying types and at least one of V or T is not a named type.
+    T is an interface type and x implements T.
+    x is a bidirectional channel value, T is a channel type, x's type V and T have identical
+		element types, and at least one of V or T is not a named type.
+    x is the predeclared identifier nil and T is a pointer, function, slice, map, channel, or interface type.
+    x is an untyped constant representable by a value of type T.
+
+#######
+TheGoProgrammingLanguageSpecification.htm#Type_declarations 看看
+#######
+Unlike regular variable declarations, a short variable declaration may redeclare
+variables provided(conj. 假如；倘若) they were originally declared earlier in the
+same block with the same type, and at least one of the non-blank variables is new.
+As a consequence, redeclaration can only appear in a multi-variable short declaration.
+Redeclaration does not introduce a new variable; it just assigns a new value to the original.
+
+field1, offset := nextField(str, 0)
+field2, offset := nextField(str, offset)  // redeclares offset
+a, a := 1, 2                              // illegal: double declaration of a or no new variable if a was declared elsewhere
+
+Short variable declarations may appear only inside functions. In some contexts such
+as the initializers for "if", "for", or "switch" statements, they can be used to
+declare local temporary variables.
+#######
+摘自Programming in Go
+*********************************************************************************
+When a struct includes an aggregated (named) or embedded (anonymous)
+field of an interface type, it means that the struct can store in that field
+any value that satisfies the interface’s specification
+*********************************************************************************
+那么可见性又是怎么个情况??
+#######
+Given type Point, the declarations
+
+func (p *Point) Length() float64 {
+	return math.Sqrt(p.x * p.x + p.y * p.y)
+}
+
+func (p *Point) Scale(factor float64) {
+	p.x *= factor
+	p.y *= factor
+}
+
+bind the methods Length and Scale, with receiver type *Point, to the base type Point.
+注意这句话的说法:
+bind the methods Length and Scale, with receiver type *Point, to the base type Point.
+receiver type 是 *Point, base type 是 Point.
+
+The type of a method is the type of a function with the receiver as first argument.
+For instance, the method Scale has type
+
+func(p *Point, factor float64)
+
+However, a function declared this way is not a method.
+#######
+熟悉下这些名词叫法
+For a primary expression x that is not a package name, the selector expression
+x.f
+denotes the field or method f of the value x (or sometimes *x;).
+The identifier f is called the (field or method) selector; it must not be the
+blank identifier. The type of the selector expression is the type of f.
+If x is a package name, see the section on qualified identifiers.
+
+A selector f may denote a field or method f of a type T, or it may refer to
+a field or method f of a nested anonymous field of T. The number of anonymous
+fields traversed to reach f is called its depth in T. The depth of a field or
+method f declared in T is zero. The depth of a field or method f declared in
+an anonymous field A in T is the depth of f in A plus one.
+#######
+The following rules apply to selectors:
+
+    1.For a value x of type T or *T where T is not an interface type, x.f denotes
+		the field or method at the shallowest(shallow: adj. 浅的；肤浅的) depth in
+		T where there is such an f. If there is not exactly one f with shallowest
+		depth, the selector expression is illegal.
+    2.For a variable x of type I where I is an interface type, x.f denotes the
+		actual method with name f of the value assigned to x. If there is no method
+		with name f in the method set of I, the selector expression is illegal.
+    3.In all other cases, x.f is illegal.
+    4.If x is of pointer type and has the value nil and x.f denotes a struct field,
+		assigning to or evaluating x.f causes a run-time panic.
+    5.If x is of interface type and has the value nil, calling or evaluating the
+		method x.f causes a run-time panic.
+
+Selectors automatically dereference pointers to structs. If x is a pointer to a
+struct, x.y is shorthand for (*x).y; if the field y is also a pointer to a
+struct, x.y.z is shorthand for (*(*x).y).z, and so on. If x contains an anonymous
+field of type *A, where A is also a struct type, x.f is shorthand for (*x.A).f.
+
+For example, given the declarations:
+
+type T0 struct {
+	x int
+}
+
+func (recv *T0) M0()
+
+type T1 struct {
+	y int
+}
+
+func (recv T1) M1()
+
+type T2 struct {
+	z int
+	T1
+	*T0
+}
+
+func (recv *T2) M2()
+
+var p *T2  // with p != nil and p.T0 != nil
+
+one may write:
+
+p.z   // (*p).z
+p.y   // ((*p).T1).y
+p.x   // (*(*p).T0).x
+
+p.M2()  // (*p).M2()
+p.M1()  // ((*p).T1).M1()
+p.M0()  // ((*p).T0).M0()
+
+#######
+For a of pointer to array type:
+a[x] is shorthand for (*a)[x]
+翻译: 如果 a 是一个指向数组的指针
+a[x] is shorthand for (*a)[x]
+
+这其实也是自动获取指针内容的一种表现
+#######
+Assigning to an element of a nil map causes a run-time panic.
+#######
+If a is a pointer to an array, a[low : high] is shorthand for (*a)[low : high]
+#######
+if a is a pointer to an array, a[low : high : max] is shorthand for (*a)[low : high : max]
+#######
+For an expression x of interface type and a type T, the primary expression
+x.(T)
+asserts that x is not nil and that the value stored in x is of type T.
+The notation x.(T) is called a type assertion.
+
+More precisely,
+	if T is not an interface type, x.(T) asserts that the dynamic type of x is identical to the type T.In
+		this case, T must implement the (interface) type of x; otherwise the type assertion is invalid
+		since it is not possible for x to store a value of type T.
+	If T is an interface type, x.(T) asserts that the dynamic type of x implements the interface T.
+
+If the type assertion holds, the value of the expression is the value stored in x and its type is T.
+If the type assertion is false, a run-time panic occurs.
+In other words, even though the dynamic type of x is known only at run time, the type of x.(T) is
+known to be T in a correct program.
+
+var x interface{} = 7  // x has dynamic type int and value 7
+i := x.(int)           // i has type int and value 7
+
+type I interface { m() }
+var y I
+s := y.(string)        // illegal: string does not implement I (missing method m)
+r := y.(io.Reader)     // r has type io.Reader and y must implement both I and io.Reader
+
+If a type assertion is used in an assignment or initialization of the form
+
+v, ok = x.(T)
+v, ok := x.(T)
+var v, ok = x.(T)
+
+the result of the assertion is a pair of values with types (T, bool).
+If the assertion holds, the expression returns the pair (x.(T), true);
+otherwise, the expression returns (Z, false) where Z is the zero value for type T.
+No run-time panic occurs in this case. The type assertion in this construct thus
+acts like a function call returning a value and a boolean indicating success.
+#######
+A method call x.m() is valid if the method set of (the type of) x contains m and the
+argument list can be assigned to the parameter list of m. If x is addressable
+and &x's method set contains m, x.m() is shorthand for (&x).m():
+[[[自动将值转换为指针]]]
+#######
+Arithmetic operators apply to numeric values and yield a result of the same type as the first operand
+Arithmetic operators apply to numeric values and yield a result of the same type as the first operand
+Arithmetic operators apply to numeric values and yield a result of the same type as the first operand
+#######
+^    bitwise XOR            integers
+&^   bit clear (AND NOT)    integers
+#######
+x / y truncated towards zero ("truncated division").
+
+ x     y     x / y     x % y
+ 5     3       1         2
+-5     3      -1        -2
+ 5    -3      -1         2
+-5    -3       1        -2
+
+[[[x % y 的正负号是根据什么决定的呢?]]]
+As an exception to this rule, if the dividend(被除数) x is the most negative value for the int type of x, the
+quotient(商) q = x / -1 is equal to x (and r = 0).
+
+			 x, q
+int8                     -128
+int16                  -32768
+int32             -2147483648
+int64    -9223372036854775808
+
+If the divisor(n. 除数) is a constant, it must not be zero. If the divisor is zero at run time, a run-time
+panic occurs. If the dividend(被除数) is non-negative and the divisor is a constant power of 2, the division may be
+replaced by a right shift, and computing the remainder may be replaced by a bitwise AND operation:
+
+ x     x / 4     x % 4     x >> 2     x & 3
+ 11      2         3         2          3
+-11     -2        -3        -3          1 [[[右移和bitwise AND 只有当dividend时正数的时候才有效]]]
+
+The shift operators shift the left operand by the shift count specified by the right operand.
+They implement arithmetic shifts if the left operand is a signed integer and logical shifts if it is an unsigned integer.
+[如果左操作数是有符号整数,执行的是arithmetic shifts,如果左操作数是无符号整数,执行的是logical shifts].
+There is no upper limit on the shift count.
+Shifts behave as if the left operand is shifted n times by 1 for a shift count of n. As a result, x << 1 is the
+same as x*2 and x >> 1 is the same as x/2 but truncated towards negative infinity.
+
+#######
+For integer operands, the unary operators +, -, and ^ are defined as follows:
+
++x                          is 0 + x
+-x    negation              is 0 - x
+^x    bitwise complement    is m ^ x  with m = "all bits set to 1" for unsigned x
+                                      and  m = -1 for signed x
+
+#######
+Pointer values are comparable. Two pointer values are equal if they point to the same variable or if both have value nil.
+
+Pointers to distinct(adj. 明显的；独特的；清楚的；有区别的) zero-size variables may or may not be equal.
+
+Channel values are comparable. Two channel values are equal if they were created by the same call to make or if both have value nil.
+
+Interface values are comparable. Two interface values are equal if they have identical dynamic types and equal dynamic
+values or if both have value nil.
+
+A value x of non-interface type X and a value t of interface type T are comparable when values of type X are comparable
+and X implements T. They are equal if t's dynamic type is identical to X and t's dynamic value is equal to x.
+
+Struct values are comparable if all their fields are comparable. Two struct values are equal if their corresponding
+non-blank fields are equal.
+
+Array values are comparable if values of the array element type are comparable. Two array values are equal if their
+corresponding elements are equal.
+#######
+A comparison of two interface values with identical dynamic types causes a run-time panic if values of that type
+are not comparable. This behavior applies not only to direct interface value comparisons but also when comparing
+arrays of interface values or structs with interface-valued fields.
+
+Slice, map, and function values are not comparable. However, as a special case, a slice, map, or function value
+may be compared to the predeclared identifier nil
+#######
+Logical operators
+
+Logical operators apply to boolean values and yield a result of the same type as the operands.
+The right operand is evaluated conditionally.
+
+&&    conditional AND    p && q  is  "if p then q else false"
+||    conditional OR     p || q  is  "if p then true else q"
+!     NOT                !p      is  "not p"
+
+#######
+很简单,但是很重要
+/TheGoProgrammingLanguageSpecification.htm#Receive_operator
+#######
+Method expressions
+
+If M is in the method set of type T, T.M is a function that is callable as a regular function with the same arguments
+as M prefixed by an additional argument that is the receiver of the method.
+
+MethodExpr    = ReceiverType "." MethodName .
+ReceiverType  = TypeName | "(" "*" TypeName ")" | "(" ReceiverType ")" .
+
+Consider a struct type T with two methods, Mv, whose receiver is of type T, and Mp, whose receiver is of type *T.
+
+type T struct {
+	a int
+}
+func (tv  T) Mv(a int) int         { return 0 }  // value receiver
+func (tp *T) Mp(f float32) float32 { return 1 }  // pointer receiver
+
+var t T
+
+The expression
+
+T.Mv
+
+yields a function equivalent to Mv but with an explicit receiver as its first argument; it has signature
+
+func(tv T, a int) int
+
+That function may be called normally with an explicit receiver, so these five invocations are equivalent:
+
+t.Mv(7)
+T.Mv(t, 7)
+(T).Mv(t, 7)
+f1 := T.Mv; f1(t, 7)
+f2 := (T).Mv; f2(t, 7)
+
+Similarly, the expression
+
+(*T).Mp
+
+yields a function value representing Mp with signature
+
+func(tp *T, f float32) float32
+
+For a method with a value receiver, one can derive a function with an explicit pointer receiver, so
+
+(*T).Mv
+
+yields a function value representing Mv with signature
+
+func(tv *T, a int) int
+
+Such a function indirects through the receiver to create a value to pass as the receiver to the
+underlying method; the method does not overwrite the value whose address is passed in the function call.
+
+The final case, a value-receiver function for a pointer-receiver method, is illegal because pointer-receiver
+methods are not in the method set of the value type.
+
+Function values derived from methods are called with function call syntax; the receiver is provided as the
+first argument to the call. That is, given f := T.Mv, f is invoked as f(t, 7) not t.f(7). To construct a
+function that binds the receiver, use a function literal or method value.
+
+It is legal to derive a function value from a method of an interface type. The resulting function takes
+an explicit receiver of that interface type.
+#######
+何谓:Method sets
+A type may have a method set associated with it.
+The method set of an interface type is its interface.
+The method set of any other type T consists of all methods declared with receiver type T.
+The method set of the corresponding pointer type *T is the set of all methods declared with
+	receiver *T or T (that is, it also contains the method set of T).
+Further rules apply to structs containing anonymous fields, as described in the section on struct types.
+Any other type has an empty method set.
+
+In a method set, each method must have a unique non-blank method name.
+The method set of a type determines the interfaces that the type implements and the
+methods that can be called using a receiver of that type.
+#######
+Method values
+
+什么是 method value?
+If the expression x has static type T and M is in the method set of type T, x.M is called a method value.
+[注意 method value 与 method expressions 的区别]
+
+The method value x.M is a function value that is callable with the same arguments as a method call of x.M.
+The expression x is evaluated and saved during the evaluation of the method value; the saved copy is then
+used as the receiver in any calls, which may be executed later.
+
+The type T may be an interface or non-interface type.
+
+As in the discussion of method expressions above, consider a struct type T with two methods, Mv, whose receiver is of
+type T, and Mp, whose receiver is of type *T.
+
+type T struct {
+	a int
+}
+func (tv  T) Mv(a int) int         { return 0 }  // value receiver
+func (tp *T) Mp(f float32) float32 { return 1 }  // pointer receiver
+
+var t T
+var pt *T
+func makeT() T
+
+The expression
+
+t.Mv
+
+yields a function value of type
+
+func(int) int
+
+These two invocations are equivalent:
+
+t.Mv(7)
+f := t.Mv; f(7)
+
+Similarly, the expression
+
+pt.Mp
+
+yields a function value of type
+
+func(float32) float32
+
+As with (正如；与…一样；就…来说) selectors, a reference to a non-interface method with a value receiver using
+a pointer will automatically dereference that pointer: pt.Mv is equivalent to (*pt).Mv.[自动取指针内容]
+
+As with method calls, a reference to a non-interface method with a pointer receiver
+using an addressable value will automatically take the address of that value: t.Mp is equivalent
+to (&t).Mp.[自动取地址,以匹配receiver为指针的情况]
+
+f := t.Mv; f(7)   // like t.Mv(7)
+f := pt.Mp; f(7)  // like pt.Mp(7)
+f := pt.Mv; f(7)  // like (*pt).Mv(7)
+f := t.Mp; f(7)   // like (&t).Mp(7)
+f := makeT().Mp   // invalid: result of makeT() is not addressable ???? 为什么说 is not addressable
+
+Although the examples above use non-interface types, it is also legal to create a method value from
+a value of interface type.
+
+var i interface { M(int) } = myVal
+f := i.M; f(7)  // like i.M(7)
+
+#######
+Conversions
+
+Conversions are expressions of the form T(x) where T is a type and x is an expression that can be converted to type T.
+
+Conversion = Type "(" Expression [ "," ] ")" .
+
+If the type starts with the operator * or <-, or if the type starts with the keyword func and has no result list, it
+must be parenthesized when necessary to avoid ambiguity:
+
+*Point(p)        // same as *(Point(p))
+(*Point)(p)      // p is converted to *Point
+<-chan int(c)    // same as <-(chan int(c))
+(<-chan int)(c)  // c is converted to <-chan int
+func()(x)        // function signature func() x
+(func())(x)      // x is converted to func()
+(func() int)(x)  // x is converted to func() int
+func() int(x)    // x is converted to func() int (unambiguous)
+
+#######
+https://zh.wikipedia.org/wiki/%E6%95%B0%E5%80%BC%E4%BF%AE%E7%BA%A6
+四舍六入五留双
+#######
+A constant value x can be converted to type T in any of these cases:
+
+    x is representable by a value of type T.
+    x is a floating-point constant, T is a floating-point type, and x is representable by a value of type T after rounding
+		using IEEE 754 round-to-even rules. The constant T(x) is the rounded value.
+    x is an integer constant and T is a string type. The same rule as for non-constant x applies in this case.
+
+Converting a constant yields a typed constant as result.
+
+uint(iota)               // iota value of type uint
+float32(2.718281828)     // 2.718281828 of type float32
+complex128(1)            // 1.0 + 0.0i of type complex128
+float32(0.49999999)      // 0.5 of type float32 [这就是所谓的:IEEE 754 round-to-even rules]
+string('x')              // "x" of type string
+string(0x266c)           // "♬" of type string
+MyString("foo" + "bar")  // "foobar" of type MyString
+string([]byte{'a'})      // not a constant: []byte{'a'} is not a constant[转换后的结果不是 constant ]
+(*int)(nil)              // not a constant: nil is not a constant, *int is not a boolean, numeric, or string type[转换后的结果不是 constant ]
+int(1.2)                 // illegal: 1.2 cannot be represented as an int[会报错]
+string(65.0)             // illegal: 65.0 is not an integer constant[会报错]
+
+#######
+Conversions to and from a string type
+
+Converting a signed or unsigned integer value to a string type yields a string containing the UTF-8 representation of the
+integer.Values outside the range of valid Unicode code points are converted to "\uFFFD".
+
+U+FFFD 说明 : Unicode Character 'REPLACEMENT CHARACTER' (U+FFFD)
+
+string('a')       // "a"
+string(-1)        // "\ufffd" == "\xef\xbf\xbd" ,说明 "\ufffd" 是 unicode point, "\xef\xbf\xbd" 是 utf8 编码
+string(0xf8)      // "\u00f8" == "ø" == "\xc3\xb8"
+type MyString string
+MyString(0x65e5)  // "\u65e5" == "日" == "\xe6\x97\xa5"
+
+注意:上文中的 'a' ,其实是 rune, 参考 spec 中的 "Rune literals" 一节.
+
+Converting a slice of bytes to a string type yields a string whose
+successive ( adj. 连续的；继承的；依次的；接替的 ) bytes are the elements of the slice.
+
+string([]byte{'h', 'e', 'l', 'l', '\xc3', '\xb8'})   // "hellø"
+string([]byte{})                                     // ""
+string([]byte(nil))                                  // ""
+
+type MyBytes []byte
+string(MyBytes{'h', 'e', 'l', 'l', '\xc3', '\xb8'})  // "hellø"
+
+Converting a slice of runes to a string type yields a string that is the concatenation of the individual rune values converted to strings.
+
+string([]rune{0x767d, 0x9d6c, 0x7fd4})   // "\u767d\u9d6c\u7fd4" == "白鵬翔"
+string([]rune{})                         // ""
+string([]rune(nil))                      // ""
+
+type MyRunes []rune
+string(MyRunes{0x767d, 0x9d6c, 0x7fd4})  // "\u767d\u9d6c\u7fd4" == "白鵬翔"
+
+Converting a value of a string type to a slice of bytes type yields a slice whose successive elements are the bytes of the string.
+
+[]byte("hellø")   // []byte{'h', 'e', 'l', 'l', '\xc3', '\xb8'}
+[]byte("")        // []byte{}
+
+MyBytes("hellø")  // []byte{'h', 'e', 'l', 'l', '\xc3', '\xb8'}
+
+Converting a value of a string type to a slice of runes type yields a slice containing the individual Unicode code points of the string.
+
+[]rune(MyString("白鵬翔"))  // []rune{0x767d, 0x9d6c, 0x7fd4}
+[]rune("")                 // []rune{}
+
+MyRunes("白鵬翔")           // []rune{0x767d, 0x9d6c, 0x7fd4}
+
+
+#######
+Constant expressions are always evaluated exactly; intermediate values and the constants themselves may require
+precision significantly larger than supported by any predeclared type in the language. The following are legal declarations:
+
+const Huge = 1 << 100         // Huge == 1267650600228229401496703205376  (untyped integer constant)
+const Four int8 = Huge >> 98  // Four == 4                                (type int8)
+
+#######
+The values of typed constants must always be accurately representable as values of the constant type. The following
+constant expressions are illegal:
+
+uint(-1)     // -1 cannot be represented as a uint ??? 为什么???
+int(3.14)    // 3.14 cannot be represented as an int
+int64(Huge)  // 1267650600228229401496703205376 cannot be represented as an int64
+Four * 300   // operand 300 cannot be represented as an int8 (type of Four)
+Four * 100   // product 400 cannot be represented as an int8 (type of Four)
+
+#######
+Order of evaluation
+
+At package level, initialization dependencies determine the evaluation order of individual
+initialization expressions in variable declarations. Otherwise, when evaluating the operands
+of an expression, assignment, or return statement, all function calls, method calls, and
+communication operations are evaluated in lexical left-to-right order.
+
+For example, in the (function-local) assignment
+
+y[f()], ok = g(h(), i()+x[j()], <-c), k()
+
+the function calls and communication happen in the order f(), h(), i(), j(), <-c, g(), and k().
+However, the order of those events compared to the evaluation and indexing of x and the
+evaluation of y is not specified.
+
+a := 1
+f := func() int { a++; return a }
+// x may be [1, 2] or [2, 2]: evaluation order between a and f() is not specified
+x := []int{a, f()}
+// m may be {2: 1} or {2: 2}: evaluation order between the two map assignments is not specified
+m := map[int]int{a: 1, a: 2}
+// n may be {2: 3} or {3: 3}: evaluation order between the key and the value is not specified
+n := map[int]int{a: f()}
+
+At package level, initialization dependencies override the left-to-right rule for individual initialization
+expressions, but not for operands within each expression:
+
+var a, b, c = f() + v(), g(), sqr(u()) + v()
+
+func f() int        { return c }
+func g() int        { return a }
+func sqr(x int) int { return x*x }
+
+// functions u and v are independent of all other variables and functions
+
+The function calls happen in the order u(), sqr(), v(), f(), v(), and g().
+
+[按道理说,应该the left-to-right rule,即从左到右,f(),v(),g(),u(),v(),但是,
+因为 initialization dependencies 规则会覆盖掉 left-to-right rule,
+f依赖于c,c依赖于 sqr(u()) + v(),因此 u 第一个被计算,sqr 第二个被计算,v() 第三个被计算,以此类推]
+
+Floating-point operations within a single expression are evaluated according to the
+associativity(结合性) of the operators. Explicit parentheses affect the evaluation
+by overriding the default associativity(结合性). In the expression x + (y + z) the
+addition y + z is performed before adding x.
+
+#######
+The assignment proceeds in two phases. First, the operands of index expressions and pointer
+indirections (including implicit pointer indirections in selectors) on the left and the
+expressions on the right are all evaluated in the usual order. Second, the assignments are
+carried out in left-to-right order.
+[也就是说,赋值分为两个阶段,首先是估值,完了才是赋值]
+
+a, b = b, a  // exchange a and b
+
+x := []int{1, 2, 3}
+i := 0
+i, x[i] = 1, 2  // set i = 1, x[0] = 2 // [说明:估值阶段 i 为 0,估值完毕后才进行赋值]
+
+i = 0
+x[i], i = 2, 1  // set x[0] = 2, i = 1
+
+x[0], x[0] = 1, 2  // set x[0] = 1, then x[0] = 2 (so x[0] == 2 at end)
+
+x[1], x[3] = 4, 5  // set x[1] = 4, then panic setting x[3] = 5. // 报错为 :panic: runtime error: index out of range
+
+type Point struct { x, y int }
+var p *Point
+// 报错为: panic: runtime error: invalid memory address or nil pointer dereference,因为 p 变量是空指针
+x[2], p.x = 6, 7  // set x[2] = 6, then panic setting p.x = 7
+
+i = 2
+x = []int{3, 5, 7}
+for i, x[i] = range x {  // set i, x[2] = 0, x[0]
+	// [[说明:第一次循环, 估值阶段 i 为 2,赋值阶段 x[i] 中的 i 为 0,赋值阶段,设置 i = 0,x[2]=x[0]  ]]
+	break // 循环一次就跳出
+}
+// after this loop, i == 0 and x == []int{3, 5, 3}
+
+In assignments, each value must be assignable to the type of the operand to which it is
+assigned, with the following special cases:
+
+1.If an untyped constant is assigned to a variable of interface type or the blank identifier, the constant is first
+converted to type bool, rune, int, float64, complex128 or string respectively, depending on whether the value is a
+boolean, rune, integer, floating-point, complex, or string constant.
+
+2.If a left-hand side is the blank identifier, any typed or non-constant value except for
+the predeclared identifier nil may be assigned to it.
+
+
+#######
+对于 range expression:
+The range expression is evaluated once before beginning the loop,
+with one exception. If the range expression is an array or a pointer to an array
+and only the first iteration value is present, only the range expression's
+length is evaluated; if that length is constant
+<a href="#Length_and_capacity">by definition</a>,
+the range expression itself will not be evaluated.
+
+这里所谓的  first iteration value 是指 k,v 中只用了k,没有用v
+
+Function calls on the left are evaluated once per iteration. For each iteration, iteration values are produced as follows:
+
+Range expression                          1st value          2nd value (if 2nd variable is present)
+
+array or slice  a  [n]E, *[n]E, or []E    index    i  int    a[i]       E
+string          s  string type            index    i  int    see below  rune
+map             m  map[K]V                key      k  K      m[k]       V
+channel         c  chan E, <-chan E       element  e  E
+
+1.For an array, pointer to array, or slice value a, the index iteration values are produced in increasing order, starting at element index 0.
+If only the first iteration variable is present, the range loop produces iteration values from 0 up to len(a)-1 and does not index into the
+array or slice itself. For a nil slice, the number of iterations is 0.
+2.For a string value, the "range" clause iterates over the Unicode code points in the string starting at byte index 0.
+On successive iterations, the index value will be the index of the first byte of successive UTF-8-encoded code points in the string,
+and the second value, of type rune, will be the value of the corresponding code point. If the iteration encounters an invalid UTF-8
+sequence, the second value will be 0xFFFD, the Unicode replacement character, and the next iteration will advance a single byte in the string.
+3.The iteration order over maps is not specified and is not guaranteed to be the same from one iteration to the next.
+If map entries that have not yet been reached are removed during iteration, the corresponding iteration values will not be produced.
+If map entries are created during iteration, that entry may be produced during the iteration or may be skipped. The choice may vary for each
+entry created and from one iteration to the next. If the map is nil, the number of iterations is 0.
+4.For channels, the iteration values produced are the successive values sent on the channel until the channel is closed.
+If the channel is nil, the range expression blocks forever.
+
+#######
+Spec
+Select statements
+A "select" statement chooses which of a set of possible send or receive operations will proceed.
+It looks similar to a "switch" statement but with the cases all referring to communication operations.
+
+SelectStmt = "select" "{" { CommClause } "}" .
+CommClause = CommCase ":" StatementList .
+CommCase   = "case" ( SendStmt | RecvStmt ) | "default" .
+RecvStmt   = [ ExpressionList "=" | IdentifierList ":=" ] RecvExpr .
+RecvExpr   = Expression .
+
+A case with a RecvStmt may assign the result of a RecvExpr to one or two variables, which may be declared
+using a short variable declaration. The RecvExpr must be a (possibly parenthesized) receive operation.
+There can be at most one default case and it may appear anywhere in the list of cases.
+
+Execution of a "select" statement proceeds in several steps:
+
+    1. For all the cases in the statement, the channel operands of receive operations and the channel and
+        right-hand-side expressions of send statements are evaluated exactly once, in source order, upon
+        entering the "select" statement. The result is a set of channels to receive from or send to, and
+        the corresponding values to send. Any side effects in that evaluation will occur
+        irrespective ( irrespective [,iri'spektiv] adj. 不考虑的；不问的；不顾的(of) ) of
+        which (if any) communication operation is selected to proceed.
+        Expressions on the left-hand side of a RecvStmt with a short variable declaration or assignment are not yet evaluated.
+
+    2. If one or more of the communications can proceed, a single one that can proceed is chosen via a
+        uniform pseudo-random selection. Otherwise, if there is a default case, that case is chosen. If
+        there is no default case, the "select" statement blocks until at least one of the communications
+        can proceed.
+
+    3. Unless the selected case is the default case, the respective( respective [ri'spektiv] adj.各自的；分别的) communication
+        operation is executed.
+
+    4. If the selected case is a RecvStmt with a short variable declaration or an assignment, the left-hand
+        side expressions are evaluated and the received value (or values) are assigned.
+    5. The statement list of the selected case is executed.
+
+Since communication on nil channels can never proceed, a select with only nil channels and no default case blocks forever.
+
+var a []int
+var c, c1, c2, c3, c4 chan int
+var i1, i2 int
+select {
+case i1 = <-c1:
+	print("received ", i1, " from c1\n")
+case c2 <- i2:
+	print("sent ", i2, " to c2\n")
+case i3, ok := (<-c3):  // same as: i3, ok := <-c3
+	if ok {
+		print("received ", i3, " from c3\n")
+	} else {
+		print("c3 is closed\n")
+	}
+case a[f()] = <-c4:
+	// same as:
+	// case t := <-c4
+	//	a[f()] = t
+default:
+	print("no communication\n")
+}
+
+for {  // send random sequence of bits to c
+	select {
+	case c <- 0:  // note: no statement, no fallthrough, no folding of cases
+	case c <- 1:
+	}
+}
+
+select {}  // block forever
+
+#######
+len 的参数为 chan 的时候,返回值的意义:
+len(s)    chan T           number of elements queued in channel buffer
+cap 的参数为 chan 的时候,返回值的意义:
+cap(s)    chan T           channel buffer capacity
+---------
+The length of a nil slice, map or channel is 0. The capacity of a nil slice or channel is 0.
+#######
+The expression len(s) is constant if s is a string constant.
+The expressions len(s) and cap(s) are constants if the type of s is an array or pointer
+to an array and the expression s does not contain channel receives or (non-constant) function
+calls; in this case s is not evaluated.
+Otherwise, invocations of len and cap are not constant and s is evaluated.
+
+const (
+	c1 = imag(2i)                    // imag(2i) = 2.0 is a constant
+	c2 = len([10]float64{2})         // [10]float64{2} contains no function calls
+	c3 = len([10]float64{c1})        // [10]float64{c1} contains no function calls
+	c4 = len([10]float64{imag(2i)})  // imag(2i) is a constant and no function call is issued
+	c5 = len([10]float64{imag(z)})   // invalid: imag(x) is a (non-constant) function call
+)
+var z complex128
+
+#######
+The variadic function append appends zero or more values x to s of type S, which must be a slice type, and
+returns the resulting slice, also of type S. The values x are passed to a parameter of type ...T where T is
+the element type of S and the respective parameter passing rules apply. As a special case, append also accepts
+a first argument assignable to type []byte with a second argument of string type followed by .... This form
+appends the bytes of the string.
+
+append(s S, x ...T) S  // T is the element type of S
+
+If the capacity of s is not large enough to fit the additional values, append allocates a new, sufficiently
+large underlying array that fits both the existing slice elements and the additional values. Otherwise, append
+re-uses the underlying array.
+
+s0 := []int{0, 0}
+s1 := append(s0, 2)                // append a single element     s1 == []int{0, 0, 2}
+s2 := append(s1, 3, 5, 7)          // append multiple elements    s2 == []int{0, 0, 2, 3, 5, 7}
+s3 := append(s2, s0...)            // append a slice              s3 == []int{0, 0, 2, 3, 5, 7, 0, 0}   注意这种写法
+s4 := append(s3[3:6], s3[2:]...)   // append overlapping slice    s4 == []int{3, 5, 7, 2, 3, 5, 7, 0, 0}
+
+var t []interface{}
+t = append(t, 42, 3.1415, "foo")                                  t == []interface{}{42, 3.1415, "foo"}
+
+var b []byte
+b = append(b, "bar"...)            // append string contents      b == []byte{'b', 'a', 'r' } 注意这种写
+
+#######
+注意它们的函数原型
+func panic(interface{})
+func recover() interface{}
+#######
+Package initialization—variable initialization and the invocation of init functions—happens in a single
+goroutine, sequentially, one package at a time. An init function may launch other goroutines, which can
+run concurrently with the initialization code. However, initialization always sequences the init functions: it
+will not invoke the next one until the previous one has returned.
+#######
+Package initialization
+
+Within a package, package-level variables are initialized according to their dependencies: if a variable x depends
+on a variable y, x will be initialized after y.
+
+Dependency analysis does not rely on the actual values of the variables, only on lexical references to them in
+the source, analyzed transitively(转变的；转移的；过渡的). For instance, a variable x's initialization expression
+may refer to a function whose body refers to variable y; if so, x depends on y. Specifically:
+
+    A reference to a variable or function is an identifier denoting that variable or function.
+    A reference to a method m is a method value or method expression of the form t.m, where
+      the (static) type of t is not an interface type, and the method m is in the method set
+      of t. It is immaterial(1.非物质的，无形的；非实体的；精神的2.无关紧要的；不重要的；无所谓的) whether
+      the resulting function value t.m is invoked.
+    A variable, function, or method x depends on a variable y if x's initialization expression or
+      body (for functions and methods) contains a reference to y or to a function or method that
+      depends on y.
+
+Dependency analysis is performed per package; only references referring to variables, functions, and methods
+declared in the current package are considered.
+It is an error if variable dependencies form a cycle (but dependency cycles containing no variables are permitted).
+If two variables are independent of each other, they are initialized in the order they are declared in the source, possibly
+in multiple files, as presented to the compiler.
+
+For example, given the declarations
+
+var (
+  // a 依赖于 b,c,因此最后才被初始化
+	a = c + b
+  // b 和 c 没有依赖关系,因此按源码中的顺序进行初始化
+	b = f()
+	c = f()
+	d = 3
+)
+
+func f() int {
+  // f 函数依赖于 d,因此 d 必须要在 f 之前被初始化
+	d++
+	return d
+}
+
+the initialization order is d, b, c, a. Since b and c are independent of each other, they are initialized
+in declaration order (b before c).
+
+Variables may also be initialized using functions named init declared in the package block, with no
+arguments and no result parameters.
+
+func init() { … }
+
+Multiple such functions may be defined, even within a single source file. The init identifier is not declared
+and thus init functions cannot be referred to from anywhere in a program.
+
+A package with no imports is initialized by assigning initial values to all its package-level variables
+followed by calling all init functions in the order they appear in the source, possibly in multiple
+files, as presented to the compiler. If a package has imports, the imported packages are initialized
+before initializing the package itself. If multiple packages import a package, the imported package
+will be initialized only once. The importing of packages, by construction, guarantees that there can
+be no cyclic initialization dependencies.
+
+Package initialization—variable initialization and the invocation of init functions—happens in a single
+goroutine, sequentially, one package at a time. An init function may launch other goroutines, which can run
+concurrently with the initialization code. However, initialization always sequences the init functions: it
+will not invoke the next one until the previous one has returned.
+#######
+Program execution
+
+A complete program is created by linking a single, unimported package called the main package with all the
+packages it imports, transitively. The main package must have package name main and declare a function main
+that takes no arguments and returns no value.
+
+func main() { … }
+
+Program execution begins by initializing the main package and then invoking the function main. When that
+function invocation returns, the program exits. It does not wait for other (non-main) goroutines to complete.
+
+main 函数返回后,程序退出.并不会等待其他 non-main 的 goroutines 完成
+#######
+摘自 effective go
+The rule about pointers vs. values for receivers is that value methods can be invoked on pointers and
+values, but pointer methods can only be invoked on pointers. This is because pointer methods can modify
+the receiver; invoking them on a copy of the value would cause those modifications to be discarded.
+--
+关于接收者对指针和值的规则是这样的，值方法可以在指针和值上进行调用，而指针方法只能在指针上调用。这
+是因为指针方法可以修改接收者；使用拷贝的值来调用它们，将会导致那些修改会被丢弃。
+#######
+effective_go.html#embedding
+这一节
+#######
+摘自 go spec
+Given a struct type S and a type named T, promoted methods are included in the method set of the struct as follows:
+
+    If S contains an anonymous field T, the method sets of S and *S both include promoted methods with
+      receiver T. The method set of *S also includes promoted methods with receiver *T.
+    If S contains an anonymous field *T, the method sets of S and *S both include promoted methods with receiver T or *T.
+#######
+range 针对 string
+参见 go spec: #For_statements
+		For a string value, the "range" clause iterates over the Unicode code points in the string starting at byte index 0.
+		On successive iterations, the index value will be the index of the first byte of successive UTF-8-encoded code points
+		in the string, and the second value, of type rune, will be the value of the corresponding code point.
+		If the iteration encounters an invalid UTF-8 sequence, the second value will be 0xFFFD, the Unicode replacement
+		character, and the next iteration will advance a single byte in the string.
+#######
+在golang中,++ 与 -- 是作为语句而不是表达式
+也就是说,不能放在 等号 右边,比如
+a:=1
+b = a++ // 非法
+---
+并且,不存在前置的递增递减,比如 --a,++a 是非法的
+
+#######
+// The close built-in function closes a channel, which must be either
+// bidirectional or send-only.
+// It should be executed only by the sender,
+// never the receiver, and has the effect of shutting down the channel after
+// the last sent value is received. After the last value has been received
+// from a closed channel c, any receive from c will succeed without
+// blocking, returning the zero value for the channel element. The form
+//	x, ok := <-c
+// will also set ok to false for a closed channel.
+func close(c chan<- Type)
+#######
+http://spf13.com/presentation/7-biggest-mistakes-in-go/
+#######
+go get -u 参数可以自动更新包，而且当go get的时候会自动获取该包依赖的其他第三方包
+go get本质上可以理解为首先第一步是通过源码工具clone代码到src目录下面，然后执行go install
+#######
+type Rectangle struct {
+    width, height float64
+}
+
+type Circle struct {
+    radius float64
+}
+
+func (r Rectangle) area() float64 {
+    return r.width*r.height
+}
+
+func (c Circle) area() float64 {
+    return c.radius * c.radius * math.Pi
+}
+
+此处方法的Receiver是以值传递，而非引用传递，是的，Receiver还可以是指针, 两者的差别在于, 指针作为Receiver会对实例
+对象的内容发生操作,而普通类型作为Receiver仅仅是以副本作为操作对象,并不对原实例对象发生操作。
+#######
+
+
+package main
+import "fmt"
+
+const(
+    WHITE = iota
+    BLACK
+    BLUE
+    RED
+    YELLOW
+)
+
+type Color byte
+
+type Box struct {
+    width, height, depth float64
+    color Color
+}
+
+type BoxList []Box //a slice of boxes
+
+func (b Box) Volume() float64 {
+    return b.width * b.height * b.depth
+}
+
+func (b *Box) SetColor(c Color) {
+    b.color = c
+}
+
+func (bl BoxList) BiggestColor() Color {
+    v := 0.00
+    k := Color(WHITE)
+    for _, b := range bl {
+        if bv := b.Volume(); bv > v {
+            v = bv
+            k = b.color
+        }
+    }
+    return k
+}
+
+func (bl BoxList) PaintItBlack() {
+    for i, _ := range bl {
+        bl[i].SetColor(BLACK)
+    }
+}
+
+func (c Color) String() string {
+    strings := []string {"WHITE", "BLACK", "BLUE", "RED", "YELLOW"}
+    return strings[c]
+}
+
+func main() {
+    boxes := BoxList {
+        Box{4, 4, 4, RED},
+        Box{10, 10, 1, YELLOW},
+        Box{1, 1, 20, BLACK},
+        Box{10, 10, 1, BLUE},
+        Box{10, 30, 1, WHITE},
+        Box{20, 20, 20, YELLOW},
+    }
+
+    fmt.Printf("We have %d boxes in our set\n", len(boxes))
+    fmt.Println("The volume of the first one is", boxes[0].Volume(), "cm³")
+    fmt.Println("The color of the last one is",boxes[len(boxes)-1].color.String())
+    fmt.Println("The biggest one is", boxes.BiggestColor().String())
+
+    fmt.Println("Let's paint them all black")
+    boxes.PaintItBlack()
+    fmt.Println("The color of the second one is", boxes[1].color.String())
+
+    fmt.Println("Obviously, now, the biggest one is", boxes.BiggestColor().String())
+}
+
+
+让我们回过头来看看SetColor这个method，它的receiver是一个指向Box的指针，是的，你可以使用*Box。想想为啥要使用指
+针而不是Box本身呢？
+
+我们定义SetColor的真正目的是想改变这个Box的颜色，如果不传Box的指针，那么SetColor接受的其实是Box的一个copy，也
+就是说method内对于颜色值的修改，其实只作用于Box的copy，而不是真正的Box。所以我们需要传入指针。
+
+这里可以把receiver当作method的第一个参数来看，然后结合前面函数讲解的传值和传引用就不难理解
+
+这里你也许会问了那SetColor函数里面应该这样定义*b.Color=c,而不是b.Color=c,因为我们需要读取到指针相应的值。
+
+你是对的，其实Go里面这两种方式都是正确的，当你用指针去访问相应的字段时(虽然指针没有任何的字段)，Go知道你要通过指
+针去获取这个值，看到了吧，Go的设计是不是越来越吸引你了。
+
+也许细心的读者会问这样的问题，PaintItBlack里面调用SetColor的时候是不是应该写成(&bl[i]).SetColor(BLACK)，因
+为SetColor的receiver是*Box，而不是Box。
+
+你又说对的，这两种方式都可以，因为Go知道receiver是指针，他自动帮你转了。
+
+也就是说：
+
+    如果一个method的receiver是*T,你可以在一个T类型的实例变量V上面调用这个method，而不需要&V去调用这个method
+
+类似的
+
+    如果一个method的receiver是T，你可以在一个*T类型的变量P上面调用这个method，而不需要 *P去调用这个method
+
+所以，你不用担心你是调用的指针的method还是不是指针的method，Go知道你要做的一切，这对于有多年C/C++编程经验的同学来
+说，真是解决了一个很大的痛苦。
+
+#######
+
+interface值
+
+那么interface里面到底能存什么值呢？如果我们定义了一个interface的变量，那么这个变量里面可以存实现这个interface的
+任意类型的对象。例如上面例子中，我们定义了一个Men interface类型的变量m，那么m里面可以存Human、Student或者Employee值。
+
+因为m能够持有这三种类型的对象，所以我们可以定义一个包含Men类型元素的slice，这个slice可以被赋予实现了Men接口的任意结构
+的对象，这个和我们传统意义上面的slice有所不同。
+
+让我们来看一下下面这个例子:
+
+package main
+import "fmt"
+
+type Human struct {
+    name string
+    age int
+    phone string
+}
+
+type Student struct {
+    Human //匿名字段
+    school string
+    loan float32
+}
+
+type Employee struct {
+    Human //匿名字段
+    company string
+    money float32
+}
+
+//Human实现SayHi方法
+func (h Human) SayHi() {
+    fmt.Printf("Hi, I am %s you can call me on %s\n", h.name, h.phone)
+}
+
+//Human实现Sing方法
+func (h Human) Sing(lyrics string) {
+    fmt.Println("La la la la...", lyrics)
+}
+
+//Employee重载Human的SayHi方法
+func (e Employee) SayHi() {
+    fmt.Printf("Hi, I am %s, I work at %s. Call me on %s\n", e.name,
+        e.company, e.phone)
+    }
+
+// Interface Men被Human,Student和Employee实现
+// 因为这三个类型都实现了这两个方法
+type Men interface {
+    SayHi()
+    Sing(lyrics string)
+}
+
+func main() {
+    mike := Student{Human{"Mike", 25, "222-222-XXX"}, "MIT", 0.00}
+    paul := Student{Human{"Paul", 26, "111-222-XXX"}, "Harvard", 100}
+    sam := Employee{Human{"Sam", 36, "444-222-XXX"}, "Golang Inc.", 1000}
+    Tom := Employee{Human{"Tom", 37, "222-444-XXX"}, "Things Ltd.", 5000}
+
+    //定义Men类型的变量i
+    var i Men
+
+    //i能存储Student
+    i = mike
+    fmt.Println("This is Mike, a Student:")
+    i.SayHi()
+    i.Sing("November rain")
+
+    //i也能存储Employee
+    i = Tom
+    fmt.Println("This is Tom, an Employee:")
+    i.SayHi()
+    i.Sing("Born to be wild")
+
+    //定义了slice Men
+    fmt.Println("Let's use a slice of Men and see what happens")
+    x := make([]Men, 3)
+    //这三个都是不同类型的元素，但是他们实现了interface同一个接口
+    x[0], x[1], x[2] = paul, sam, mike
+
+    for _, value := range x{
+        value.SayHi()
+    }
+}
+
+通过上面的代码，你会发现interface就是一组抽象方法的集合，它必须由其他非interface类型实现，而不能自我实现， Go通过
+interface实现了duck-typing:即"当看到一只鸟走起来像鸭子、游泳起来像鸭子、叫起来也像鸭子，那么这只鸟就可以被称为鸭子"。
+
+#######
+嵌入interface
+https://github.com/astaxie/build-web-application-with-golang/blob/master/zh/02.6.md#%E5%B5%8C%E5%85%A5interface
+#######
+import (
+	"fmt"
+	"math/rand"
+)
+
+By convention, the package name is the same as the last element of the import path.
+For instance, the "math/rand" package comprises files that begin with the statement package rand.
+
+This code groups the imports into a parenthesized, "factored" import statement.
+
+You can also write multiple import statements, like:
+
+import "fmt"
+import "math"
+
+But it is good style to use the factored import statement.
+#######
+package main
+import "fmt"
+var c, python, java bool
+func main() {
+	var i int
+	fmt.Println(i, c, python, java)
+}
+
+A var statement can be at package or function level. We see both in this example.
+#######
+i := 42
+f := float64(i)
+u := uint(f)
+
+Unlike in C, in Go assignment between items of different type requires an explicit conversion.
+#######
+Type inference
+
+When declaring a variable without specifying its type (using var without a type or the := syntax),
+the variable's type is inferred from the value on the right hand side.
+
+When the right hand side of the declaration is typed, the new variable is of that same type:
+
+var i int
+j := i // j is an int
+
+But when the right hand side contains an untyped numeric constant, the new variable may be an int,
+float64, or complex128 depending on the precision of the constant:
+
+i := 42           // int
+f := 3.142        // float64
+g := 0.867 + 0.5i // complex128
+#######
+Numeric constants are high-precision values.
+An untyped constant takes the type needed by its context.
+Numeric constants 是高精确度的值,一个 untyped constant 会根据上下文来决定自己的值
+
+package main
+import "fmt"
+const (
+	Big = 1 << 100
+	Small = Big >> 99
+)
+func needInt(x int) int { return x * 10 + 1 }
+func needFloat(x float64) float64 {
+	return x * 0.1
+}
+
+func main() {
+	fmt.Println(needInt(Small))
+	fmt.Println(needFloat(Small))
+	fmt.Println(needFloat(Big))
+	fmt.Println(needInt(Big)) // 如果加上这一行就会报错: constant 1267650600228229401496703205376 overflows int
+}
+#######
+package main
+import (
+	"fmt"
+	"time"
+)
+func main() {
+	fmt.Println("When's Saturday?")
+	today := time.Now().Weekday()
+	switch time.Saturday {
+	case today + 0:
+		fmt.Println("Today.")
+	case today + 1:
+		fmt.Println("Tomorrow.")
+	case today + 2:
+		fmt.Println("In two days.")
+	default:
+		fmt.Println("Too far away.")
+	}
+}
+#######
+Switch without a condition is the same as switch true.
+This construct can be a clean way to write long if-then-else chains.
+t := time.Now()
+switch {
+case t.Hour() < 12:
+    fmt.Println("Good morning!")
+case t.Hour() < 17:
+    fmt.Println("Good afternoon.")
+default:
+    fmt.Println("Good evening.")
+}
+#######
+Defer: A defer statement defers the execution of a function until the surrounding function returns.
+
+*****************************************
+The deferred call's arguments are evaluated immediately, but the function call is not executed
+until the surrounding function returns.
+*****************************************
+
+package main
+import "fmt"
+func main() {
+	defer fmt.Println("world")
+	fmt.Println("hello")
+}
+#######
+Go has pointers. A pointer holds the memory address of a variable.
+The type *T is a pointer to a T value. Its zero value is nil.
+var p *int
+The & operator generates a pointer to its operand.
+i := 42
+p = &i
+The * operator denotes the pointer's underlying value.
+fmt.Println(*p) // read i through the pointer p
+*p = 21         // set i through the pointer p
+This is known as "dereferencing" or "indirecting".
+
+Unlike C, Go has no pointer arithmetic.
+#######
+Struct fields can be accessed through a struct pointer.
+The indirection through the pointer is transparent.
+
+type Vertex struct {
+	X int
+	Y int
+}
+
+func main() {
+	v := Vertex{1, 2}
+	p := &v
+	p.X = 1e9
+	fmt.Println(v)
+}
+
+#######
+Nil slices
+The zero value of a slice is nil.
+A nil slice has a length and capacity of 0.
+
+func main() {
+	var z []int
+	fmt.Println(z, len(z), cap(z))
+	if z == nil {
+		fmt.Println("nil!")
+	}
+}
+
+#######
+for i := range pow {
+    pow[i] = 1 << uint(i)
+}
+只写 i 的时候, 这样就是省略了 value
+#######
+Maps must be created with make (not new) before use; the nil map is empty and cannot be assigned to.
+
+var m map[string]Vertex
+func main() {
+  m = make(map[string]Vertex) // 使用之前必须 make
+  m["Bell Labs"] = Vertex{
+    40.68433, -74.39967,
+  }
+}
+-----
+但是 slice 不同,slice 在 声明后可以直接使用 ????????????????????????? 真的吗 ???????????????????????????????
+var a []int
+// append works on nil slices.
+a = append(a, 0)
+#######
+Map literals 如何写
+
+type Vertex struct {
+	Lat, Long float64
+}
+
+var m = map[string]Vertex{
+	"Bell Labs": Vertex{
+		40.68433, -74.39967,
+	},
+	"Google": Vertex{
+		37.42202, -122.08408,
+	},
+}
+
+If the top-level type is just a type name, you can omit it from the elements of the literal.
+
+var m = map[string]Vertex{
+	"Bell Labs": {40.68433, -74.39967},
+	"Google":    {37.42202, -122.08408},
+}
+
+#######
+Mutating Maps
+Insert or update an element in map m:
+m[key] = elem
+
+Retrieve an element:
+elem = m[key] // if the key is not present the result is the zero value for the map's element type
+
+Delete an element:
+delete(m, key)
+
+Test that a key is present with a two-value assignment:
+elem, ok = m[key]
+
+If key is in m, ok is true. If not, ok is false and elem is the zero value for the map's element type.
+Similarly, when reading from a map if the key is not present the result is the zero value for the map's element type.
+#######
+Function values
+Functions are values too.
+
+package main
+import (
+	"fmt"
+	"math"
+)
+func main() {
+	hypot := func(x, y float64) float64 {
+		return math.Sqrt(x*x + y*y)
+	}
+	fmt.Println(hypot(3, 4))
+}
+#######
+Function closures
+Go functions may be closures. A closure is a function value that references variables from outside
+its body. The function may access and assign to the referenced variables; in this sense the function
+is "bound" to the variables.
+For example, the adder function returns a closure. Each closure is bound to its own sum variable.
+
+package main
+
+import "fmt"
+
+func adder() func(int) int {
+	sum := 0
+	return func(x int) int {
+		sum += x
+		return sum
+	}
+}
+
+func main() {
+	pos, neg := adder(), adder()
+	for i := 0; i < 10; i++ {
+		fmt.Println(
+			pos(i),
+			neg(-2*i),
+		)
+	}
+}
+
+#######
+You can declare a method on any type that is declared in your package, not just struct types.
+However, you cannot define a method on a type from another package (including built in types).
+#######
+http://tour.golangtc.com/methods/4
+interfaces.go
+#######
+http://tour.golangtc.com/methods/10
+reader.go
+#######
+http://tour.golangtc.com/methods/13
+web-servers.go
+#######
+http://tour.golangtc.com/methods/14
+exercise-http-handlers.go
+
+package main
+
+import (
+	"fmt"
+	"log"
+	"net/http"
+)
+
+type String string
+
+func (s String) ServeHTTP(
+	w http.ResponseWriter,
+	r *http.Request) {
+	fmt.Fprint(w, s)
+}
+
+type Struct struct {
+	Greeting string
+	Punct    string
+	Who      string
+}
+
+func (st *Struct) ServeHTTP(
+	w http.ResponseWriter,
+	r *http.Request) {
+	fmt.Fprint(w, "dd")
+	fmt.Fprint(w, st)
+}
+
+func main() {
+	http.Handle("/string", String("I'm a frayed knot."))
+	http.Handle("/struct", &Struct{"Hello", ":", "Gophers!"})
+	log.Fatal(http.ListenAndServe("localhost:4000", nil))
+}
+
+#######
+Goroutines: A goroutine is a lightweight thread managed by the Go runtime.
+go f(x, y, z)
+starts a new goroutine running
+f(x, y, z)
+The evaluation of f, x, y, and z happens in the current goroutine and the execution of f happens in the new goroutine.
+Goroutines run in the same address space, so access to shared memory must be synchronized. The sync package provides
+useful primitives, although you won't need them much in Go as there are other primitives(这里的other primitives指的是channel).
+#######
+Channels are a typed conduit(管道) through which you can send and receive values with the channel operator, <-.
+
+ch <- v    // Send v to channel ch.
+v := <-ch  // Receive from ch, and assign value to v.
+
+(The data flows in the direction of the arrow.)
+Like maps and slices, channels must be created before use:
+ch := make(chan int)
+By default, sends and receives block until the other side is ready. This allows goroutines to
+synchronize without explicit locks or condition variables.
+#######
+对于 channel 来说
+The loop for i := range c receives values from the channel repeatedly until it is closed.
+Note: Only the sender should close a channel, never the receiver. Sending on a closed channel will cause a panic.
+Another note: Channels aren't like files; you don't usually need to close them. Closing is only necessary when
+the receiver must be told there are no more values coming, such as to terminate a range loop.
+#######
+http://tour.golangtc.com/concurrency/6
+
+channel 的 select 操作中的 Default Selection
+The default case in a select is run if no other case is ready.
+Use a default case to try a send or receive without blocking:
+
+select {
+case i := <-c:
+    // use i
+default:
+    // receiving from c would block
+}
+#######
+If you want to put two (or more) statements on one line, they must be separated with a
+semicolon (’;’). Normally you don’t need the semicolon.
+#######
+When declaring a variable it is assigned the "natural" null value for the type. This means that after [var a int] , a has a value of
+0. With [var s string] , s is assigned the zero string, which is "" .
+#######
+Declaring and assigning in Go is a two step process, but they may be combined. Compare the following pieces of code which have the same effect.
+-----
+var a int
+var b bool
+a = 15
+b = false
+-----
+a := 15
+b := false
+-----
+#######
+s := "Hello World!"
+Strings in Go are a sequence of UTF-8 characters enclosed in double quotes ("). If you use
+the single quote (') you mean one character (encoded in UTF-8) — which is not a string in Go.
+#######
+如何修改String
+s := "hello"
+c := []rune(s)
+c[0] = 'c'
+s2 := string(c)
+fmt.Printf("%s\n", s2)
+#######
+if err := SomeFunction(); err != nil {
+    // do something
+} else {
+    return err
+}
+
+It is idomatic in Go to omit the else when the if statement's body has a break, continue, return or, goto,
+so the above code would be better written as:
+
+if err := SomeFunction(); err != nil {
+    return err
+}
+// do something
+#######
+使用 label
+J:  for j := 0; j < 5; j++ {
+        for i := 0; i < 10; i++ {
+            if i > 5 {
+                break J
+            }
+            fmt.Println(i)
+        }
+    }
+
+#######
+In the UTF-8 world characters are sometimes called runes .
+当 range 作用到 string 类型的时候,Then it will break out the individual Unicode characters.
+Mostly, when people talk about characters, they mean 8 bit characters.
+As UTF-8 characters may be up to 32 bits the word rune is used.
+In this case the type of char is rune. and their start position, by parsing the UTF-8. The loop:
+
+for pos, char := range "Gő!" {
+    fmt.Printf("character '%c' starts at byte position %d\n", char, pos)
+}
+prints
+
+character 'G' starts at byte position 0
+character 'ő' starts at byte position 1
+character '!' starts at byte position 3
+Note that ő took 2 bytes
+#######
+switch i {
+    case 0, 1: 1
+        f()
+    default:
+        g()
+}
+You can list cases on one line 1, separated by commas.
+#######
+arrays are values: Assigning one array to another copies all the elements.
+In particular, if you pass an array to a function it will receive a copy of the array, not a pointer to it.
+#######
+What makes slices different from arrays is that a slice is a pointer to an array; slices are reference types.
+Reference types are created with make.
+#######
+s0 := []int{0, 0}
+s1 := append(s0, 2) //1
+s2 := append(s1, 3, 5, 7) //2
+s3 := append(s2, s0...) //3
+At 1 we append a single element, making s1 equal to []int{0, 0, 2}.
+At 2 we append multiple elements, making s2 equal to []int{0, 0, 2, 3, 5, 7}.
+And at 3 we append a slice, giving us s3 equal to []int{0, 0, 2, 3, 5, 7, 0, 0}. Note the three dots used after s0...! This
+is needed make it clear explicit that you're appending another slice, instead of a single value.
+#######
+The copy function copies slice elements from a source to a destination, and returns the number of elements
+it copied. This number is the minimum of the length of the source and the length of the destination. For example:
+
+var a = [...]int{0, 1, 2, 3, 4, 5, 6, 7}
+var s = make([]int, 6)
+n1 := copy(s, a[0:])  //1
+n2 := copy(s, s[2:])  //2
+
+After 1, n1 is 6, and s is []int{0, 1, 2, 3, 4, 5}. And after 2, n2 is 4, and s is []int{2, 3, 4, 5, 4, 5}.
+#######
+With defer you can even change return values, provided that you are using named result parameters and a function literal, i.e:
+defer func() {/* ... */}()
+Here we use a function without a name and specify the body of the function inline, basically we're creating
+a nameless function on the spot. The final braces are needed because defer needs a function call, not a function
+value. If our anonymous function would take an parameter it would be easier to see why we need the braces:
+
+defer func(x int) {/* ... */}(5)
+
+In this (unnamed) function you can access any named return parameter:
+
+func f() (ret int)
+    defer func() { // 1
+        ret++
+    }()
+    return 0
+}
+
+Here 1 we specify our function, the named return value ret is initialized with zero. The nameless function
+in the defer increments the value of ret with 1. The return 0 on line 5 will not be the returned value, because
+of defer. The function f will return 1!
+#######
+Variadic function:可变参数函数|变长参数函数
+
+Variadic Parameter
+Functions that take a variable number of parameters are known as variadic functions. To declare a function as variadic, do something like this:
+func myfunc(arg ...int) {}
+The arg ...int instructs Go to see this as a function that takes a variable number of arguments.
+Note that these arguments all have to have the type int. In the body of your function the variable arg is a slice of ints:
+
+for _, n := range arg {
+    fmt.Printf("And the number is: %d\n", n)
+}
+
+If you don't specify the type of the variadic argument it defaults to the empty interface interface{}
+
+Suppose we have another variadic function called myfunc2, the following example shows how to pass variadic arguments to it:
+
+func myfunc(arg ...int) {
+    myfunc2(arg...)
+    myfunc2(arg[:2]...)
+}
+
+With myfunc2(arg...) we pass all the parameters to myfunc2, but because the variadic parameters is just
+a slice, we can use some slice tricks as well.
+#######
+The Go standard library names some function with the old (Unix) names while others are in CamelCase. The
+convention is to leave well-known legacy not-quite-words alone rather than try to figure out where the
+capital letters go: Atoi, Getwd, Chmod. CamelCasing works best when you have whole words to work with: ReadFile,
+NewWriter, MakeSlice. The convention in Go is to use CamelCase rather than underscores to write multi-word names.
+
+The convention in Go is that package names are lowercase, single word names
+
+The package name used in the import statement is the default name used. But if the need arises (two different
+packages with the same name for instance), you can override this default:
+import bar "bytes"
+The function Buffer is now accessed as bar.Buffer.
+
+Another convention is that the package name is the base name of its source directory; the package in src/compress/gzip is
+imported as compress/gzip but has name gzip, not compress/gzip.
+
+It is important to avoid stuttering when naming naming things. For instance, the buffered reader type in the bufio package
+is called Reader, not BufReader, because users see it as bufio.Reader, which is a clear, concise name.
+
+Similarly, the function to make new instances of ring.Ring (package container/ring), would normally be called NewRing, but
+since Ring is the only type exported by the package, and since the package is called ring, it's called just New. Clients of
+the package see that as ring.New. Use the package structure to help you choose good names.
+
+Another short example is once.Do (see package sync); once.Do(setup) reads well and would not be improved by
+writing once.DoOrWaitUntilDone(setup). Long names don't automatically make things more readable.
+#######
+As said, there is no pointer arithmetic, so if you write: *p++, it is interpreted as (*p)++: first reference and then increment the value.
+#######
+Go has pointers but not pointer arithmetic. You cannot use a pointer variable to walk through the bytes of a string.
+#######
+The documentation for bytes.Buffer states that "the zero value for Buffer is an empty buffer ready to use.".
+Similarly, sync.Mutex does not have an explicit constructor or Init method. Instead, the zero
+value for a sync.Mutex is defined to be an unlocked mutex.
+也就是说,所谓的 zero value 是由各个类型自己定义的
+#######
+Constructors and composite literals
+
+Sometimes the zero value isn't good enough and an initializing constructor is necessary, as in this example taken from the package os.
+
+func NewFile(fd int, name string) *File {
+    if fd < 0 {
+        return nil
+    }
+    f := new(File)
+    f.fd = fd
+    f.name = name
+    f.dirinfo = nil
+    f.nepipe = 0
+    return f
+}
+
+There's a lot of boiler plate in there. We can simplify it using a composite literal , which is an expression that
+creates a new instance each time it is evaluated.
+
+func NewFile(fd int, name string) *File {
+    if fd < 0 {
+        return nil
+    }
+    f := File{fd, name, nil, 0}
+    return &f
+}
+
+It is OK to return the address of a local variable. the storage associated with the variable survives after the function returns.
+
+In fact, taking the address of a composite literal allocates a fresh instance each time it is evaluated, so we can combine
+these last two lines.
+
+return &File{fd, name, nil, 0}
+
+The items (called fields) of a composite literal are laid out in order and must all be present. However, by labeling
+the elements explicitly as field:value pairs, the initializers can appear in any order, with the missing ones left
+as their respective zero values. Thus we could say
+
+return &File{fd: fd, name: name}
+
+As a limiting case, if a composite literal contains no fields at all, it creates a zero value for the type.
+The expressions new(File) and &File{} are equivalent. In fact the use of new is discouraged.
+
+Composite literals can also be created for arrays, slices, and maps, with the field labels being indices or map keys as
+appropriate. In these examples, the initializations work regardless of the values of Enone, and Einval, as long as they
+are distinct:
+
+ar := [...]string{Enone: "no error", Einval: "invalid argument"}
+sl := []string{Enone: "no error", Einval: "invalid argument"}
+ma := map[int]string {Enone: "no error", Einval: "invalid argument"}
+
+#######
+If you omit the name for a field, you create an anonymous field , for instance:
+
+struct {
+    T1        // Field name is T1.
+    *T2       // Field name is T2.
+    P.T3      // Field name is T3.
+    x, y int  // Field names are x and y.
+}
+
+??? anonymous field 也存在 Field name 的概念???
+#######
+对于struct
+Note that field names that start with a capital letter are exported, i.e. can be set or read from other packages.
+Field names that start with a lowercase are private to the current package. The same goes for functions defined in packages.
+#######
+func (n1 *NameAge) doSomething(n2 int) { /* */ }
+This is a method call, which can be used as:
+    var n *NameAge
+    n.doSomething(2)
+
+keep the following in mind, this is quoted from :
+
+    If x is addressable and &x's method set contains m, x.m() is shorthand for (&x).m().
+
+In the above case this means that the following is not an error:
+
+var n NameAge       // Not a pointer
+n.doSomething(2)
+
+Here Go will search the method list for n of type NameAge, come up empty and will then also search the method list for
+the type *NameAge and will translate this call to (&n).doSomething(2).
+
+There is a subtle but major difference between the following type declarations. Suppose we have:
+
+// A Mutex is a data type with two methods, Lock and Unlock.
+type Mutex struct         { /* Mutex fields */ }
+func (m *Mutex) Lock()    { /* Lock impl. */ }
+func (m *Mutex) Unlock()  { /* Unlock impl. */ }
+
+We now create two types in two different manners:
+
+    type NewMutex Mutex.
+    type PrintableMutex struct{Mutex}.
+
+NewMutex is equal to Mutex, but it does not have any of the methods of Mutex. In other words its method set
+is empty. But PrintableMutex has inherited the method set from Mutex. The Go term for this is embedding .
+In the words of :
+
+    The method set of *PrintableMutex contains the methods Lock and Unlock bound to its anonymous field Mutex.
+#######
+从string转换为slice of bytes or runes
+
+mystring := "hello this is string"
+byteslice := []byte(mystring)
+
+Converts to a byte slice, each byte contains the integer value of the corresponding byte in the string. Note
+that as strings in Go are encoded in UTF-8 some characters in the string may end up in 1, 2, 3 or 4 bytes.
+
+runeslice  := []rune(mystring)
+
+Converts to an rune slice, each rune contains a Unicode code point. Every character from the string corresponds to one rune.
+---
+
+From a slice of bytes or runes to a string.
+
+b := []byte{'h','e','l','l','o'} // Composite literal.
+s := string(b)
+i := []rune{257,1024,65}
+r := string(i)
+
+#######
+User defined types and conversions
+
+How can you convert between the types you have defined yourself? We create two types here Foo and Bar, where Bar is an alias for Foo:
+
+type foo struct { int }  // Anonymous struct field.
+type bar foo             // bar is an alias for foo.
+
+Then we:
+
+var b bar = bar{1} // Declare `b` to be a `bar`.
+var f foo = b      // Assign `b` to `f`.
+
+Which fails on the last line with: cannot use b (type bar) as type foo in assignment
+
+This can be fixed with a conversion: var f foo = foo(b)
+
+Note that converting structures that are not identical in their fields is more difficult.
+Also note that converting b to a plain int also fails; an integer is not the same as a structure containing an integer.
+#######
+Method calls
+
+Suppose we have the following program. Note the package container/vector was once part of Go, but has been removed
+when the append built-in was introduced. However, for this question this isn't important. The package implemented
+a stack-like structure, with push and pop methods.
+
+    package main
+    import "container/vector"
+    func main() {
+        k1 := vector.IntVector{}
+        k2 := &vector.IntVector{}
+        k3 := new(vector.IntVector)
+        k1.Push(2)
+        k2.Push(3)
+        k3.Push(4)
+    }
+
+What are the types of k1, k2 and k3?
+Now, this program compiles and runs OK. All the Push operations work even though the variables are of a different type.
+
+The documentation for Push says:
+
+func (p *IntVector) Push(x int) Push appends x to the end of the vector.
+
+So the receiver has to be of type *IntVector, why does the code above (the Push statements) work correct then?
+
+--
+Answer
+The type of k1 is vector.IntVector. Why? We use a composite literal (the {}), so we get a value of that type back.
+The variable k2 is of *vector.IntVector, because we take the address (&) of the composite literal.
+And finally k3 has also the type *vector.IntVector, because new returns a pointer to the type.
+
+A method call x.m() is valid if the method set of (the type of) x contains m and the argument list can be assigned
+to the parameter list of m. If x is addressable and &x's method set contains m, x.m() is shorthand for (&x).m().
+
+In other words because k1 is addressable and *vector.IntVector does have the Push method,
+the call k1.Push(2) is translated by Go into (&k1).Push(2) which makes the type system happy again
+#######
+接口
+In Go, the word interface is overloaded to mean several different things.
+Every type has an interface, which is the set of methods defined for that type.
+This bit of code defines a struct type S with one field, and defines two methods for S.
+
+type S struct { i int }
+func (p *S) Get() int  { return p.i }
+func (p *S) Put(v int) { p.i = v }
+
+Defining a struct and methods on it.
+
+You can also define an interface type, which is simply a set of methods. This defines an interface I with two methods:
+
+type I interface {
+  Get() int
+  Put(int)
+}
+
+S is a valid implementation for interface I, because it defines the two methods which I requires. Note that this
+is true even though there is no explicit declaration that S implements I.
+
+A Go program can use this fact via yet another meaning of interface, which is an interface value:
+(interface value : 在 go 中是一个名词概念)
+
+func f(p I) { 1
+    fmt.Println(p.Get()) 2
+    p.Put(1) 3
+}
+
+At 1 we declare a function that takes an interface type as the argument. Because p implements I, it must have the Get() method, which
+we call at 2. And the same holds true for the Put() method at 3. Because S implements I, we can call the function f passing in a pointer
+to a value of type S: var s S; f(&s)
+
+The reason we need to take the address of s, rather than a value of type S, is because we defined the methods on s to operate on
+pointers, see the definition in the code above. This is not a requirement -- we could have defined the methods to take values -- but
+then the Put method would not work as expected.
+
+The fact that you do not need to declare whether or not a type implements an interface means that Go implements a form of duck typing .
+This is not pure duck typing, because when possible the Go compiler will statically check whether the type implements the interface.
+However, Go does have a purely dynamic aspect, in that you can convert from one interface type to another.
+In the general case, that conversion is checked at run time. If the conversion is invalid -- if the type of the value stored in the
+existing interface value does not satisfy the interface to which it is being converted -- the program will fail with a run time error.
+
+Interfaces in Go are similar to ideas in several other programming languages: pure abstract virtual base classes in C++, typeclasses
+in Haskell or duck typing in Python. However there is no other language which combines interface values, static type checking, dynamic
+run time conversion, and no requirement for explicitly declaring that a type satisfies an interface. The result in Go is powerful, flexible,
+efficient, and easy to write.
+
+Let's define another type R that also implements the interface I:
+
+type R struct { i int }
+func (p *R) Get() int  { return p.i }
+func (p *R) Put(v int) { p.i = v }
+
+The function f can now accept variables of type R and S.
+
+Suppose you need to know the actual type in the function f. In Go you can figure that out by using a type switch ((type switch)).
+
+func f(p I) {
+    switch t := p.(type) { 1
+        case *S: 2
+        case *R: 3
+        case S:  4
+        case R:  5
+        default: 6
+    }
+}
+
+At 1 we use the type switch, note that the .(type) syntax in only valid within a switch statement. We store the type in the variable t.
+The subsequent cases 2 3 4 5 each check for a different actual type. And we can even have a default 6 clause.
+
+A type switch isn't the only way to discover the type at run-time.
+
+if t, ok := something.(I); ok { 1
+     ...
+}
+
+You can also use a "comma, ok" form 1 to see if an interface type implements a specific interface. If ok is true, t will hold the
+type of something. When you are sure a variable implements an interface you can use: t := something.(I) .
+
+Empty interface
+
+Since every type satisfies the empty interface: interface{}. We can create a generic function which has an empty interface as its argument:
+
+func g(something interface{}) int {
+    // something.(I) : type assertion
+    return something.(I).Get()
+}
+
+The return something.(I).Get() is the tricky bit in this function.
+The value something has type interface{}, meaning no guarantee of any methods at all: it could contain any type.
+The .(I) is a type assertion which converts something to an interface of type I. If we have that type we can invoke
+the Get() function. So if we create a new variable of the type *S, we can just call g(), because *S also implements the empty interface.
+
+s = new(S)
+fmt.Println(g(s));
+
+The call to g will work fine and will print 0. If we however invoke g() with a value that does not implement I we have a problem:
+
+i :=
+fmt.Println(g(i))
+
+This compiles, but when we run this we get slammed with: "panic: interface conversion: int is not main.I: missing method Get".
+
+Which is completely true, the built-in type int does not have a Get() method.
+#######
+Methods are functions that have a receiver. You can define methods on any type (except on non-local types, this
+includes built-in types: the type int can not have methods). You can however make a new integer type with its own methods. For example:
+
+type Foo int
+
+func (self Foo) Emit() {
+  fmt.Printf("%v", self)
+}
+
+type Emitter interface {
+  Emit()
+}
+
+Doing this on non-local (types defined in other packages) types yields an error "cannot define new methods on non-local type int".
+#######
+The receiver type must be of the form T or *T where T is a type name. T is called the receiver base type or just base type. The base type
+must not be a pointer or interface type and must be declared in the same package as the method.
+
+Creating a pointer to an interface value is a useless action in Go. It is in fact illegal to create a pointer to an interface value. The
+release notes for an earlier Go release that made them illegal leave no room for doubt:
+
+"The language change is that uses of pointers to interface values no longer automatically de-reference the pointer. A pointer
+to an interface value is more often a beginner's bug than correct code."
+#######
+Interface names
+By convention, one-method interfaces are named by the method name plus an -er suffix or similar modification to construct an
+agent noun(n. 名词): Reader, Writer, Formatter, CloseNotifier etc.
+
+There are a number of such names and it's productive to honor them and the function names they
+capture. Read, Write, Close, Flush, String and so on have canonical signatures and meanings.
+To avoid confusion, don't give your method one of those names unless it has the same signature and meaning.
+Conversely(adv. 相反地), if your type implements a method with the same meaning as a method on a well-known
+type, give it the same name and signature; call your string-converter method String not ToString.
+#######
+http://miek.nl/go/#a-sorting-example
+#######
+sepc:
+Unlike regular variable declarations, a short variable declaration may redeclare variables provided they were originally
+declared earlier in the same block (or the parameter lists if the block is the function body) with the same type, and at
+least one of the non-blank variables is new. As a consequence, redeclaration can only appear in a multi-variable short
+declaration. Redeclaration does not introduce a new variable; it just assigns a new value to the original.
+
+field1, offset := nextField(str, 0)
+field2, offset := nextField(str, offset)  // redeclares offset
+a, a := 1, 2                              // illegal: double declaration of a or no new variable if a was declared
+#######
+Redeclaration and reassignment
+
+An aside: The last example in the previous section demonstrates a detail of how the := short declaration form works. The declaration that calls os.Open reads,
+
+f, err := os.Open(name)
+
+This statement declares two variables, f and err. A few lines later, the call to f.Stat reads,
+
+d, err := f.Stat()
+
+which looks as if it declares d and err. Notice, though, that err appears in both statements. This duplication is legal: err is declared by the first statement, but only re-assigned in the second. This means that the call to f.Stat uses the existing err variable declared above, and just gives it a new value.
+
+In a := declaration a variable v may appear even if it has already been declared, provided:
+
+    this declaration is in the same scope as the existing declaration of v (if v is already declared in an outer scope, the declaration will create a new variable §),
+    the corresponding value in the initialization is assignable to v, and
+    there is at least one other variable in the declaration that is being declared anew.
+
+This unusual property is pure pragmatism, making it easy to use a single err value, for example, in a long if-else chain. You'll see it used often.
+
+§ It's worth noting here that in Go the scope of function parameters and return values is the same as the function body, even though they appear lexically outside the braces that enclose the body. 
+#######
+Although they are not nearly as common in Go as some other C-like languages, break statements can be used to terminate a switch early. Sometimes, though, it's necessary to break out of a surrounding loop, not the switch, and in Go that can be accomplished by putting a label on the loop and "breaking" to that label. This example shows both uses.
+
+Loop:
+	for n := 0; n < len(src); n += size {
+		switch {
+		case src[n] < sizeOne:
+			if validateOnly {
+				// 跳出 switch
+				break
+			}
+			size = 1
+			update(src[n])
+
+		case src[n] < sizeTwo:
+			if n+1 >= len(src) {
+				err = errShortInput
+				// 跳出 loop标记的循环
+				break Loop
+			}
+			if validateOnly {
+				// 跳出 switch
+				break
+			}
+			size = 2
+			update(src[n] + src[n+1]<<shift)
+		}
+	}
+
+Of course, the continue statement also accepts an optional label but it applies only to loops.
+#######
+Type switch (专门比较type的switch语句)
+
+A switch can also be used to discover the dynamic type of an interface variable.
+Such a type switch uses the syntax of a type assertion with the keyword type inside the parentheses. If the switch declares a variable in the expression, the variable will have the corresponding type in each clause.
+
+It's also idiomatic to reuse the name in such cases, in effect declaring a new variable with the same name but a different type in each case.
+[golang 惯用法是在这些case里重用同一个名字，实际上是在每个case里声名一个新的变量，其具有相同的名字，但是不同的类型]
+
+var t interface{}
+t = functionOfSomeType()
+switch t := t.(type) {
+// default 的顺序不重要,可以放到第一个
+default:
+    fmt.Printf("unexpected type %T", t)       // %T prints whatever type t has
+case bool:
+    fmt.Printf("boolean %t\n", t)             // t has type bool
+case int:
+    fmt.Printf("integer %d\n", t)             // t has type int
+case *bool:
+    fmt.Printf("pointer to boolean %t\n", *t) // t has type *bool
+case *int:
+    fmt.Printf("pointer to integer %d\n", *t) // t has type *int
+}
+#######
+来自 effictive go
+If you want to control the default format for a custom type, all that's required is to define a method with the signature String() string on the type. For our simple type T, that might look like this.
+
+func (t *T) String() string {
+    return fmt.Sprintf("%d/%g/%q", t.a, t.b, t.c)
+}
+fmt.Printf("%v\n", t)
+
+to print in the format
+
+7/-2.35/"abc\tdef"
+
+(If you need to print values of type T as well as pointers to T, the receiver for String must be of value type; this example used a pointer because that's more efficient and idiomatic for struct types.
+
+[[
+pointers vs. value receivers 一节中提到
+The rule about pointers vs. values for receivers is that value methods can be invoked on pointers and values, but pointer methods can only be invoked on pointers. This is because pointer methods can modify the receiver; invoking them on a copy of the value would cause those modifications to be discarded.
+--
+关于接收者对指针和值的规则是这样的，值方法可以在指针和值上进行调用，而指针方法只能在指针上调用。这是因为指针方法可以修改接收者；使用拷贝的值来调用它们，将会导致那些修改会被丢弃。
+]]
+#######
+Interface conversions and type assertions
+
+Type switches are a form of conversion: they take an interface and, for each case in the switch, in a sense(in a sense:就某种意义来说) convert it to the type of that case. Here's a simplified version of how the code under fmt.Printf turns a value into a string using a type switch. If it's already a string, we want the actual string value held by the interface, while if it has a String method we want the result of calling the method.
+[注意: Type switches 也是 conversion的一种形式.]
+
+type Stringer interface {
+    String() string
+}
+
+var value interface{} // Value provided by caller.
+switch str := value.(type) {
+case string:
+    return str
+case Stringer:
+    return str.String()
+}
+
+The first case finds a concrete value; the second converts the interface into another interface. It's perfectly fine to mix types this way.
+
+What if there's only one type we care about? If we know the value holds a string and we just want to extract it? A one-case type switch would do, but so would a type assertion. A type assertion takes an interface value and extracts from it a value of the specified explicit type. The syntax borrows from the clause opening a type switch, but with an explicit type rather than the type keyword:
+
+value.(typeName)
+
+and the result is a new value with the static type typeName. That type must either be the concrete type held by the interface, or a second interface type that the value can be converted to. To extract the string we know is in the value, we could write:
+
+str := value.(string)
+
+But if it turns out that the value does not contain a string, the program will crash with a run-time error. To guard against that, use the "comma, ok" idiom to test, safely, whether the value is a string:
+
+str, ok := value.(string)
+if ok {
+    fmt.Printf("string value is: %q\n", str)
+} else {
+    fmt.Printf("value is not a string\n")
+}
+
+If the type assertion fails, str will still exist and be of type string, but it will have the zero value, an empty string.
+
+As an illustration of the capability, here's an if-else statement that's equivalent to the type switch that opened this section.
+
+if str, ok := value.(string); ok {
+    return str
+} else if str, ok := value.(Stringer); ok {
+    return str.String()
+}
+#######
+Interface checks
+
+As we saw in the discussion of interfaces above, a type need not declare explicitly that it implements an interface. Instead, a type implements the interface just by implementing the interface's methods.
+
+In practice, most interface conversions are static and therefore checked at compile time. For example, passing an *os.File to a function expecting an io.Reader will not compile unless *os.File implements the io.Reader interface. [有些接口检查是编辑期间检查]
+
+Some interface checks do happen at run-time, though. One instance is in the encoding/json package, which defines a Marshaler interface. When the JSON encoder receives a value that implements that interface, the encoder invokes the value's marshaling method to convert it to JSON instead of doing the standard conversion. The encoder checks this property at run time with a type assertion like:
+[有些接口检查是运行期间检查]
+
+m, ok := val.(json.Marshaler)
+
+If it's necessary only to ask whether a type implements an interface, without actually using the interface itself, perhaps as part of an error check, use the blank identifier to ignore the type-asserted value:
+
+if _, ok := val.(json.Marshaler); ok {
+    fmt.Printf("value %v of type %T implements json.Marshaler\n", val, val)
+}
+
+One place this situation arises is when it is necessary to guarantee within the package implementing the type that it actually satisfies the interface.
+
+If a type — for example, json.RawMessage — needs a custom JSON representation, it should implement json.Marshaler, but there are no static conversions that would cause the compiler to verify this automatically. If the type inadvertently(adv. 非故意地；不注意地) fails to satisfy the interface, the JSON encoder will still work, but will not use the custom implementation. To guarantee that the implementation is correct, a global declaration using the blank identifier can be used in the package:
+
+var _ json.Marshaler = (*RawMessage)(nil)
+
+In this declaration, the assignment involving a conversion of a *RawMessage to a Marshaler requires that *RawMessage implements Marshaler, and that property will be checked at compile time. Should the json.Marshaler interface change, this package will no longer compile and we will be on notice that it needs to be updated.
+
+The appearance of the blank identifier in this construct indicates that the declaration exists only for the type checking, not to create a variable. Don't do this for every type that satisfies an interface, though. By convention, such declarations are only used when there are no static conversions already present in the code, which is a rare event.
+#######
+The bufio package has two struct types, bufio.Reader and bufio.Writer, each of which of course implements the analogous interfaces from package io. And bufio also implements a buffered reader/writer, which it does by combining a reader and a writer into one struct using embedding: it lists the types within the struct but does not give them field names.
+
+// ReadWriter stores pointers to a Reader and a Writer.
+// It implements io.ReadWriter.
+type ReadWriter struct {
+    // bufio.Reader and bufio.Writer, each of which of course implements the analogous interfaces from package io
+    // bufio 包中, 在 *bufio.Reader 和 *bufio.Writer 这两个 receiver 上面定义了 package io 包中那些接口要求的方法.
+    *Reader  // *bufio.Reader // bufio.Reader 是一个结构体, 而 Reader 在 io 包中是interface
+    *Writer  // *bufio.Writer // bufio.Writer 是一个结构体, 而 Reader 在 io 包中是interface
+}
+
+The embedded elements are pointers to structs and of course must be initialized to point to valid structs before they can be used.
+
+The ReadWriter struct could be written as
+
+// 非匿名形式的嵌入
+type ReadWriter struct {
+    reader *Reader
+    writer *Writer
+}
+
+but then to promote the methods of the fields and to satisfy the io interfaces, we would also need to provide forwarding methods, like this:
+
+// 意指: 非匿名形式的嵌入,必须手动提供 Read 和 Write 方法来满足接口
+func (rw *ReadWriter) Read(p []byte) (n int, err error) {
+    /**
+    注意后面有提到:
+    In our example, when the Read method of a bufio.ReadWriter is invoked, it has exactly the same effect as the forwarding method written out above; the receiver is the reader field of the ReadWriter, not the ReadWriter itself.(这点很重要)
+    */
+    return rw.reader.Read(p)
+}
+
+By embedding the structs directly, we avoid this bookkeeping(n. 记帐，簿记). [匿名嵌入避免了需要手动提供方法来满足接口]
+
+
+The methods of embedded types come along for free, which means that bufio.ReadWriter not only has the methods of bufio.Reader and bufio.Writer, it also satisfies all three interfaces: io.Reader, io.Writer, and io.ReadWriter.
+
+There's an important way in which embedding differs from subclassing.
+
+☆☆☆: When we embed a type, the methods of that type become methods of the outer type, but when they are invoked the receiver of the method is the inner type, not the outer one.
+
+In our example, when the Read method of a bufio.ReadWriter is invoked, it has exactly the same effect as the forwarding method written out above; the receiver is the reader field of the ReadWriter, not the ReadWriter itself.
+
+#######
+type Job struct {
+    Command string // embedded
+    *log.Logger // 非 embedded
+}
+
+The Job type now has the Log, Logf and other methods of *log.Logger. We could have given the Logger a field name, of course, but it's not necessary to do so. And now, once initialized, we can log to the Job:
+
+job.Log("starting now...")
+
+The Logger is a regular field of the Job struct, so we can initialize it in the usual way inside the constructor for Job, like this,
+
+func NewJob(command string, logger *log.Logger) *Job {
+    return &Job{command, logger}
+}
+
+or with a composite literal,
+
+job := &Job{command, log.New(os.Stderr, "Job: ", log.Ldate)}
+
+
+If we need to refer to an embedded field directly, the type name of the field, ignoring the package qualifier, serves as a field name, as it did in the Read method of our ReaderWriter struct. Here, if we needed to access the *log.Logger of a Job variable job, we would write job.Logger, which would be useful if we wanted to refine the methods of Logger.
+
+func (job *Job) Logf(format string, args ...interface{}) {
+    job.Logger.Logf("%q: %s", job.Command, fmt.Sprintf(format, args...))
+}
+
+Embedding types introduces the problem of name conflicts but the rules to resolve them are simple. First, a field or method X hides any other item X in a more deeply nested part of the type. If log.Logger contained a field or method called Command, the Command field of Job would dominate(vt. 控制；支配；占优势；在…中占主要地位) it.
+
+Second, if the same name appears at the same nesting level, it is usually an error; it would be erroneous(adj. 错误的；不正确的) to embed log.Logger if the Job struct contained another field or method called Logger. However, if the duplicate name is never mentioned in the program outside the type definition, it is OK. This qualification provides some protection against changes made to types embedded from outside; there is no problem if a field is added that conflicts with another field in another subtype if neither field is ever used.
+#######
+Go encourages a different approach in which shared values are passed around on channels and, in fact, never actively shared by separate threads of execution.
+
+Only one goroutine has access to the value at any given time. Data races cannot occur, by design. To encourage this way of thinking we have reduced it to a slogan(n. 标语；呐喊):
+
+    Do not communicate by sharing memory; instead, share memory by communicating.
+#######
+这个例子有点长,来自 effective go
+Channels
+
+Like maps, channels are allocated with make, and the resulting value acts as a reference to an underlying data structure. If an optional integer parameter is provided, it sets the buffer size for the channel. The default is zero, for an unbuffered or synchronous(adj. 同步的；同时的) channel.
+
+ci := make(chan int)            // unbuffered channel of integers
+cj := make(chan int, 0)         // unbuffered channel of integers
+cs := make(chan *os.File, 100)  // buffered channel of pointers to Files
+
+Unbuffered channels combine communication—the exchange of a value—with synchronization—guaranteeing that two calculations (goroutines) are in a known state.
+
+There are lots of nice idioms using channels. Here's one to get us started. In the previous section we launched a sort in the background. A channel can allow the launching goroutine to wait for the sort to complete.
+
+c := make(chan int)  // Allocate a channel.
+// Start the sort in a goroutine; when it completes, signal on the channel.
+go func() {
+    list.Sort()
+	  // 这里能使用c是因为闭包可以引用外层变量
+    c <- 1  // Send a signal; value does not matter.
+}()
+doSomethingForAWhile()
+<-c   // Wait for sort to finish; discard sent value.
+
+Receivers always block until there is data to receive.(Receivers 总是会阻塞) If the channel is unbuffered, the sender blocks until the receiver has received the value. If the channel has a buffer, the sender blocks only until the value has been copied to the buffer; if the buffer is full, this means waiting until some receiver has retrieved a value(意思是有人抽走了数据让buffer有了空间,sender才有机会发送数据从而让自己不阻塞).
+
+A buffered channel can be used like a semaphore, for instance to limit throughput(吞吐量，通过量，总处理能力). In this example, incoming requests are passed to handle, which receives a value from the channel, processes the request, and then sends a value back to the channel to ready the "semaphore" for the next consumer. The capacity of the channel buffer limits the number of simultaneous calls to process, so during initialization we prime the channel by filling it to capacity.
+
+(prime
+adj. 主要的；最好的；基本的
+adv. 极好地
+n. 初期；青年；精华；全盛时期
+vt. 使准备好；填装
+vi. 作准备)
+
+// 这个例子,通过 channel 来模仿信号量, // outstanding  adj. 杰出的；显著的；未解决的；未偿付的 n. 未偿贷款
+var sem = make(chan int, MaxOutstanding)
+
+func handle(r *Request) {
+    <-sem          // Wait for active queue to drain(vi. 排水；流干). // 从 sem 这个 channel 中接收值,然后丢弃这个值
+    process(r)     // May take a long time.
+    sem <- 1       // Done; enable next request to run. // 向 sem 这个 channel 随便发送一个值
+}
+
+func init() {
+    for i := 0; i < MaxOutstanding; i++ {
+        sem <- 1
+    }
+}
+
+func Serve(queue chan *Request) {
+    for {
+        req := <-queue
+        go handle(req)  // Don't wait for handle to finish. // 在 handle 函数中,通过 sem 这个 channel 的缓冲长度限制了并发数
+    }
+}
+
+Because data synchronization occurs on a receive from a channel (that is, the send "happens before" the receive; see The Go Memory Model), acquisition(n. 获得物，获得) of the semaphore must be on a channel receive, not a send.
+[[[??这句话什么意思??]]]
+
+This design has a problem, though: Serve creates a new goroutine for every incoming request, even though only MaxOutstanding of them can run at any moment. As a result, the program can consume unlimited resources if the requests come in too fast. We can address that deficiency(n. 缺陷，缺点) by changing Serve to gate(给…安装门(或阀门、牌楼等)) the creation of the goroutines. Here's an obvious solution, but beware(当心，小心) it has a bug we'll fix subsequently:
+
+func Serve(queue chan *Request) {
+    // 通过 range 来从 chan 中接收值,赋值给 req
+    for req := range queue {
+        <-sem
+        go func() {
+            process(req) // Buggy; see explanation below.
+            sem <- 1
+        }()
+    }
+}
+
+The bug is that in a Go for loop, the loop variable is reused for each iteration, so the req variable is shared across all goroutines. That's not what we want. We need to make sure that req is unique for each goroutine. Here's one way to do that, passing the value of req as an argument to the closure in the goroutine:
+
+func Serve(queue chan *Request) {
+    for req := range queue {
+        <-sem
+        go func(req *Request) {
+            process(req)
+            sem <- 1
+        }(req) // 类似 javascript 的闭包解决方案
+    }
+}
+
+Compare this version with the previous to see the difference in how the closure is declared and run. Another solution is just to create a new variable with the same name, as in this example:
+
+func Serve(queue chan *Request) {
+    for req := range queue {
+        <-sem
+        // 类似于 javascript 的 var that = this 解决方案,但因为 golang 不像 js
+        // golang拥有块级作用域,块级作用域内声明的变量会仅仅在内层块内有效,会覆盖掉外层的同名变量
+        req := req // Create new instance of req for the goroutine.
+        go func() {
+            process(req)
+            sem <- 1
+        }()
+    }
+}
+
+It may seem odd to write
+
+req := req
+
+but it's a legal and idiomatic in Go to do this. You get a fresh version of the variable with the same name, deliberately(adv. 故意地；谨慎地；慎重地) shadowing the loop variable locally but unique to each goroutine.
+
+Going back to the general problem of writing the server, another approach that manages resources well is to start a fixed number of handle goroutines all reading from the request channel. The number of goroutines limits the number of simultaneous calls to process. This Serve function also accepts a channel on which it will be told to exit; after launching the goroutines it blocks receiving from that channel.
+
+func handle(queue chan *Request) {
+    for r := range queue {
+        process(r)
+    }
+}
+
+func Serve(clientRequests chan *Request, quit chan bool) {
+    // Start handlers
+    for i := 0; i < MaxOutstanding; i++ {
+        go handle(clientRequests)
+    }
+    <-quit  // Wait to be told to exit.
+}
+
+
+Channels of channels
+
+One of the most important properties of Go is that a channel is a first-class value that can be allocated and passed around like any other. A common use of this property is to implement safe, parallel demultiplexing(n. 多路分解；多路解编；分成多路处理).
+
+In the example in the previous section, handle was an idealized(adj. 理想化的) handler for a request but we didn't define the type it was handling. If that type includes a channel on which to reply, each client can provide its own path for the answer. Here's a schematic(adj. 图解的；概要的 n. 原理图；图解视图) definition of type Request.
+
+type Request struct {
+    args        []int
+    f           func([]int) int
+    resultChan  chan int
+}
+
+The client provides a function and its arguments, as well as a channel inside the request object on which to receive the answer.
+
+func sum(a []int) (s int) {
+    for _, v := range a {
+        s += v
+    }
+    return
+}
+
+request := &Request{[]int{3, 4, 5}, sum, make(chan int)}
+// Send request // 在这里发送
+clientRequests <- request
+// Wait for response.
+fmt.Printf("answer: %d\n", <-request.resultChan)
+
+On the server side, the handler function is the only thing that changes.
+
+func handle(queue chan *Request) {
+    for req := range queue {
+        req.resultChan <- req.f(req.args) // 在这里接收
+    }
+}
+
+There's clearly a lot more to do to make it realistic(adj. 现实的；现实主义的；逼真的；实在论的;具有真实感), but this code is a framework for a rate-limited, parallel, non-blocking RPC system, and there's not a mutex in sight(in sight - adv. 在即，在望；看得见；被看到).
+
+
+
+#######
+#######
+本例来自 effictive go
+A leaky(adj. 漏的；有漏洞的) buffer
+
+The tools of concurrent programming can even make non-concurrent ideas easier to express. Here's an example abstracted from(abstracted from - 从···提取) an RPC package.
+
+The client goroutine loops receiving data from some source, perhaps a network. To avoid allocating and freeing buffers, it keeps a free list, and uses a buffered channel to represent it. If the channel is empty, a new buffer gets allocated. Once the message buffer is ready, it's sent to the server on serverChan.
+
+var freeList = make(chan *Buffer, 100)
+var serverChan = make(chan *Buffer)
+
+func client() {
+    for {
+        var b *Buffer
+        // Grab a buffer if available; allocate if not.
+        select {
+        case b = <-freeList:
+            // Got one; nothing more to do.
+        default:
+            // None free, so allocate a new one.
+            b = new(Buffer)
+        }
+        load(b)              // Read next message from the net.
+        serverChan <- b      // Send to server.
+    }
+}
+
+The server loop receives each message from the client, processes it, and returns the buffer to the free list.
+
+func server() {
+    for {
+        b := <-serverChan    // Wait for work.
+        process(b)
+        // Reuse buffer if there's room.
+        select {
+        case freeList <- b: // 把 b 送到 freeList
+            // Buffer on free list; nothing more to do.
+        default:
+            // 如果上一个case没有通过,说明 freeList 满了
+            // Free list full, just carry on(carry on:继续).
+        }
+    }
+}
+
+The client attempts to retrieve a buffer from freeList; if none is available, it allocates a fresh one. The server's send to freeList puts b back on the free list unless the list is full, in which case the buffer is dropped on the floor to be reclaimed by the garbage collector. (The default clauses in the select statements execute when no other case is ready, meaning that the selects never block.) This implementation builds a leaky(adj. 漏的；有漏洞的) bucket(n. 桶，水桶；铲斗；一桶的量v. 倾盆而下；颠簸着行进) free list in just a few lines, relying on the buffered channel and the garbage collector for bookkeeping.
+
+
+#######
+Arrays do not need to be initialized explicitly; the zero value of an array is a ready-to-use array whose elements are themselves zeroed:
+
+var a [4]int
+
+// a[2] == 0, the zero value of the int type
+#######
+Go's arrays are values. An array variable denotes the entire array; it is not a pointer to the first array element (as would be the case in C). This means that when you assign or pass around an array value you will make a copy of its contents. (To avoid the copy you could pass a pointer to the array, but then that's a pointer to an array, not an array.) One way to think about arrays is as a sort of struct but with indexed rather than named fields: a fixed-size composite value.
+#######
+The zero value of a slice is nil. The len and cap functions will both return 0 for a nil slice.
+
+Since the zero value of a slice (nil) acts like a zero-length slice, you can declare a slice variable and then append to it in a loop:
+
+// Filter returns a new slice holding only
+// the elements of s that satisfy f()
+func Filter(s []int, fn func(int) bool) []int {
+    var p []int // == nil
+    for _, v := range s {
+        if fn(v) {
+            p = append(p, v)
+        }
+    }
+    return p
+}
+#######
+
+A possible "gotcha"
+
+As mentioned earlier, re-slicing a slice doesn't make a copy of the underlying array. The full array will be kept in memory until it is no longer referenced. Occasionally this can cause the program to hold all the data in memory when only a small piece of it is needed.
+
+For example, this FindDigits function loads a file into memory and searches it for the first group of consecutive numeric digits, returning them as a new slice.
+
+var digitRegexp = regexp.MustCompile("[0-9]+")
+
+func FindDigits(filename string) []byte {
+    b, _ := ioutil.ReadFile(filename)
+    return digitRegexp.Find(b)
+}
+
+This code behaves as advertised, but the returned []byte points into an array containing the entire file. Since the slice references the original array, as long as the slice is kept around the garbage collector can't release the array; the few useful bytes of the file keep the entire contents in memory.
+
+To fix this problem one can copy the interesting data to a new slice before returning it:
+
+func CopyDigits(filename string) []byte {
+    b, _ := ioutil.ReadFile(filename)
+    b = digitRegexp.Find(b)
+    c := make([]byte, len(b))
+    copy(c, b)
+    return c
+}
+
+A more concise version of this function could be constructed by using append. This is left as an exercise for the reader.
+#######
+package main
+import (
+	"encoding/json"
+	"fmt"
+)
+
+func main() {
+	b := []byte(`{"Name":"Wednesday","Age":6,"Parents":["Gomez","Morticia"]}`)
+	type FamilyMember struct {
+		Name    string
+		Age     int
+		Parents []string
+	}
+
+	var m FamilyMember
+	err := json.Unmarshal(b, &m)
+	if err != nil{
+		fmt.Println("json.Unmarshal error: ", err)
+		return
+	}
+	fmt.Printf("%+v \n", m)
+}
+
+/**
+Unmarshaling that data into a FamilyMember value works as expected, but if we look
+closely we can see a remarkable thing has happened. With the var statement we
+allocated a FamilyMember struct, and then provided a pointer to that value to
+Unmarshal, but at that time the Parents field was a nil slice value. To populate
+the Parents field, Unmarshal allocated a new slice behind the scenes. This is typical
+of how Unmarshal works with the supported reference types (pointers, slices, and maps).
+ */
+#######
+
+Consider unmarshaling into this data structure:
+
+type Foo struct {
+    Bar *Bar
+}
+
+If there were a Bar field in the JSON object, Unmarshal would allocate a new Bar and populate it. If not, Bar would be left as a nil pointer.
+
+From this a useful pattern arises: if you have an application that receives a few distinct message types, you might define "receiver" structure like
+
+type IncomingMessage struct {
+    Cmd *Command
+    Msg *Message
+}
+
+and the sending party can populate the Cmd field and/or the Msg field of the top-level JSON object, depending on the type of message they want to communicate. Unmarshal, when decoding the JSON into an IncomingMessage struct, will only allocate the data structures present in the JSON data. To know which messages to process, the programmer need simply test that either Cmd or Msg is not nil.
+#######
+package main
+
+/**
+Streaming Encoders and Decoders
+
+The json package provides Decoder and Encoder types to support the common operation of
+reading and writing streams of JSON data. The NewDecoder and NewEncoder functions wrap
+the io.Reader and io.Writer interface types.
+
+func NewDecoder(r io.Reader) *Decoder
+func NewEncoder(w io.Writer) *Encoder
+
+Here's an example program that reads a series of JSON objects from standard input, removes
+all but the Name field from each object, and then writes the objects to standard output:
+*/
+
+import (
+	"encoding/json"
+	"log"
+	"os"
+)
+
+// 说明: 在stdin中输入: {"Name":"Wednesday","Age":6}, 会输出: {"Name":"Wednesday"}
+func main() {
+	dec := json.NewDecoder(os.Stdin)
+	enc := json.NewEncoder(os.Stdout)
+	for {
+		var v map[string]interface{}
+		if err := dec.Decode(&v); err != nil {
+			log.Println(err)
+			return
+		}
+		for k := range v {
+			if k != "Name" {
+				delete(v, k)
+			}
+		}
+		if err := enc.Encode(&v); err != nil {
+			log.Println(err)
+		}
+	}
+}
+
+/**
+Due to the ubiquity of Readers and Writers, these Encoder and Decoder
+types can be used in a broad range of scenarios, such as reading and
+writing to HTTP connections, WebSockets, or files.
+*/
+
+#######
+channel方向
+chan T          // can be used to send and receive values of type T
+chan<- float64  // can only be used to send float64s
+<-chan int      // can only be used to receive ints
+
+根据箭头来,箭头指向chan,表示发送给channel
+箭头从chan流出,表示从channel中接收
+#######
+以下, r 代表 request
+
+获取主机名
+if r.Host == "www.asta.com" {
+    i18n.SetLocale("en")
+} else if r.Host == "www.asta.cn" {
+    i18n.SetLocale("zh-CN")
+} else if r.Host == "www.asta.tw" {
+    i18n.SetLocale("zh-TW")
+}
+
+操作header信息
+AL := r.Header.Get("Accept-Language")
+if AL == "en" {
+    i18n.SetLocale("en")
+} else if AL == "zh-CN" {
+    i18n.SetLocale("zh-CN")
+} else if AL == "zh-TW" {
+    i18n.SetLocale("zh-TW")
+}
+#######
+http://docs.studygolang.com/doc/faq#nil_error      很重要
+#######
+到package所在目录执行 'go test',就运行了测试,默认只显示测试不通过的信息,如果要显示测试通过的信息,执行'go test -v'
+
+go test不会默认执行压力测试的函数，如果要执行压力测试需要带上参数 -test.bench，语法:-test.bench="test_name_regex",例如go test -test.bench=".*"表示测试全部的压力测试
+#######
+import 的路径是相对于 $GOPATH/src 目录
+#######
+A related tool, goimports, additionally manages the insertion and removal of import declarations as needed. It is not
+part of the standard distribution, but you can obtain it with this command:
+$ go get golang.org/x/tools/cmd/goimports
+#######
+The -insecure flag permits fetching from repositories and resolving
+custom domains using insecure schemes such as HTTP. Use with caution.
+
+$ go get -insecure -u github.com/stretchr/gomniauth/...
+#######
+#######
+#######
+#######
+#######
+#######
+#######
+#######
+#######
+#######
+#######
+#######
+#######
+#######
+#######
+#######
+#######
+#######
+#######
+#######
+#######
+#######
+#######
+#######
+#######
+#######
+#######
+#######
+如果一个method的receiver是 *T ,你可以在一个 T 类型的实例变量 V 上面调用这个method，而不需要 &V 去调用这个method
+如果一个method的receiver是 T ，你可以在一个 *T 类型的变量 P 上面调用这个method，而不需要 *P 去调用这个method
+#######

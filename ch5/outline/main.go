@@ -36,6 +36,7 @@ func outline(stack []string, n *html.Node) {
 		fmt.Println(stack) // 输出当前 stack
 	}
 	for c := n.FirstChild; c != nil; c = c.NextSibling {
+		// 在这里,对于调用者来说,stack这个sliceHeader结构体是不会变的,甚至通过stack可窥见的数组元素也不会变(可能stack指向的底层数据已经被增删)
 		outline(stack, c) // 递归
 	}
 }
@@ -49,12 +50,16 @@ callee(被调用者) may append elements to this slice, modifying its underlying
 allocating a new array, it doesn't modify the initial elements that are visible to the caller, so
 when the function returns, the caller's stack is as it was before the call.
 ===============================
-虽然outline会将元素"push"到stack末尾,却并没有对应的pop.
-当outline递归调用自身的时候,callee接收到stack的一份copy.
 
-虽然callee可能append元素到stack这个slice中, 或修改stack这个slice对应的底层数组, 或分配一个新的数组,
-但callee并不会修改stack的初始元素(这些初始元素对caller永远可见) (caller拥有的stack变量永远都指向同一个底层数组,不会变动)
-(因为 stack = append(stack, n.Data) 这条语句并不会影响 caller)
+stack
+1,2,3
+开始递归调用stack
+1,2,3,4
+1,2,3,4,5
+1,2,3,4,5,6
+1,2,3,4,5
+1,2,3,4
+1,2,3 回到调用者
 
-因此,当递归返回的时候, caller 的 stack 变量维持不变.(slice中的前几个元素没有变化,并且len没有变化).
+        
  */

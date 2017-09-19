@@ -37,6 +37,7 @@ func main() {
 	event each time it wakes up. When the main function returns, it stops receiving events from tick, but
 	the ticker goroutine is still there, trying in vain to send on a channel from which no goroutine is
 	receiving — a goroutine leak.
+	in vain 徒然；无效
 
 	The Tick function is convenient, but it's appropriate only when the ticks will be needed throughout
 	the lifetime of the application. Otherwise, we should use this pattern:

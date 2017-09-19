@@ -1,5 +1,5 @@
 Go Concurrency Patterns: Timing out, moving on
-[[[1-over]]] 2016-12-23 15:13:23
+[[[3-over]]] 2017-9-15 10:32:33
 
 Concurrent programming has its own idioms. A good example is timeouts.
 
@@ -13,7 +13,7 @@ timeout := make(chan bool, 1) // 缓冲区长度为1
 // timeout goroutine
 go func() {
     time.Sleep(1 * time.Second)
-    timeout <- true // 因为 timeout 这个 channel 是有缓冲的,因此这里不会阻塞,函数正常退出
+    timeout <- true // 因为 timeout 这个 channel 是有缓冲的,因此这里不会阻塞,goroutine正常退出
 }()
 
 
@@ -34,7 +34,7 @@ exit. The goroutine(指: timeout goroutine) doesn't know (or care) whether the v
 goroutine(指: timeout goroutine) won't hang around forever if the ch receive happens before the timeout is reached. The
 timeout channel will eventually be deallocated by the garbage collector.
 (假如说在一秒内从ch中收到了数据, select语句执行完毕,开始执行select之后的语句.1秒后timeout goroutine发送了数据,此时timeout这个channel中还有数据,之后被垃圾回收)
-                                               如果是非buffer的channel,此时是发送不动的,因为没有接收方
+                                               如果是非buffer的channel,此时是发送不动的,因为没有接收方,此时timeout这个goroutine被阻塞,整个goroutine不会自动退出
 
 (In this example we used time.Sleep to demonstrate the mechanics of goroutines and channels. In real programs you
 should use ` time.After`, a function that returns a channel and sends on that channel after the specified duration.)
@@ -56,13 +56,13 @@ func Query(conns []Conn, query string) Result {
         }(conn)
     }
     // 在下面的接收语句之前,甚至在上面的for循环过程中,可能某个goroutine中的 c.DoQuery 就已经执行完毕发送 Result 到 ch.
-    // 如果ch是无缓冲的channel,,那个  ch <- c.DoQuery(query) 操作会阻塞, 因为没有接收方.
+    // 如果ch是无缓冲的channel,,那个  ch <- c.DoQuery(query) 操作会被忽略掉(由于使用了带default的select)
     return <-ch // 从 ch 中接收数据
 }
 
 In this example, the closure does a non-blocking send, which it achieves by using the send operation in select statement
 with a default case. If the send cannot go through immediately the default case will be selected. Making the send
-non-blocking guarantees that none of the goroutines launched in the loop will hang around.
+non-blocking guarantees that none of the goroutines launched in the loop will hang around(即使send失败,该goroutine也能自行退出).
 
 However, if the result arrives before the main function has made it to the receive, the send could fail since no one is ready.
 

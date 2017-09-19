@@ -15,8 +15,7 @@ import (
 // from file path to the MD5 sum of the file's contents.  If the directory walk
 // fails or any read operation fails, MD5All returns an error.
 func MD5All(root string) (map[string][md5.Size]byte, error) {
-	// 文件名 => md5
-	m := make(map[string][md5.Size]byte)
+	m := make(map[string][md5.Size]byte) // 文件名 => md5
 	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error { // HL
 		if err != nil {
 			return err

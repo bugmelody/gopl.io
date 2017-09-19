@@ -27,8 +27,8 @@ type result struct {
 func sumFiles(done <-chan struct{}, root string) (<-chan result, <-chan error) {
 	// For each regular file, start a goroutine that sums the file and sends
 	// the result on c.  Send the result of the walk on errc.
-	c := make(chan result) // 无缓冲
-	errc := make(chan error, 1) // 缓冲区长度为1, 让 send 操作不会阻塞
+	c := make(chan result) // 整个函数第一返回值,无缓冲
+	errc := make(chan error, 1) // 整个函数第二返回值,缓冲区长度为1, 让 send 操作不会阻塞
 	go func() { // HL
 		var wg sync.WaitGroup
 		err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
@@ -44,6 +44,7 @@ func sumFiles(done <-chan struct{}, root string) (<-chan result, <-chan error) {
 				data, err := ioutil.ReadFile(path)
 				// 要么 send result 到 c 成功
 				// 要么 收到 done 完成信号
+				// 下面两个case,看谁先发生,但是注意:md5.Sum是需要时间进行计算的
 				select {
 				case c <- result{path, md5.Sum(data), err}: // HL
 				case <-done: // HL
@@ -58,9 +59,9 @@ func sumFiles(done <-chan struct{}, root string) (<-chan result, <-chan error) {
 			// Abort the walk if done is closed.
 			select {
 			case <-done: // HL
-				return errors.New("walk canceled")
+				return errors.New("walk canceled") // 整个Walk的循环被终止
 			default:
-				return nil
+				return nil // 还会进行后续Walk
 			}
 		})
 		// Walk has returned, so all calls to wg.Add are done.  Start a
@@ -91,7 +92,7 @@ func MD5All(root string) (map[string][md5.Size]byte, error) {
 
 	c, errc := sumFiles(done, root) // HLdone
 
-	m := make(map[string][md5.Size]byte)
+	m := make(map[string][md5.Size]byte) // 函数第1返回值
 	for r := range c { // HLrange
 		if r.err != nil {
 			// range 从 channel 中接收到的 result 的 err 字段出错了

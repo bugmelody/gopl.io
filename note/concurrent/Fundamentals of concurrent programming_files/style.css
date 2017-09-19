@@ -1,0 +1,158 @@
+/* Stefan Nilsson, 2012-03-05 */
+
+/* Setup for non-HTML5 aware browsers */
+article,aside,details,figcaption,figure,footer,header,hgroup,menu,nav,section,summary {display:block}
+
+* {padding: 0; margin: 0;}
+
+body {
+  width: 40em; margin: 0 auto;
+  color: #333; background: white; /* background: #f7f7ef; */
+  font: 1.0em/1.4em  Georgia, serif;
+  text-align: left;
+}
+p {margin: 0 4em 0.8em 0;}
+h1 {
+  font: 2em/1.2em sans-serif;
+  font-weight: normal; font-style: normal;
+  margin: 0.6em 0 0.4em 0; color: #e74b4a;
+}
+h2 {
+  font-family: sans-serif; font-size: 1.2em; font-weight: bold;
+  margin: 1.4em 0 0 0; line-height: 1.4em;
+}
+h3 {
+  font-size: 1.1em; font-weight: normal; font-style: italic;
+  margin: 0.8em 0 0 0; line-height: 1.4em;
+}
+
+table {margin: 0 4em 1em 0;}
+table.GoJava {width: 100%;}
+table.GoJava th {font-family: sans-serif;}
+
+pre, table.GoJava {
+  font: 1.0em/1.5em monospace;
+  margin: 0.8em 0 1em 0;
+  padding: 0.6em 1em;
+  background: #fff8df;
+  border-style: solid;
+  border-width: 1px;
+  border-color: #efe8cf;
+  border-radius: 8px;
+}
+
+em {font-style: italic; font-weight: normal;}
+code {font-family: monospace; line-height: 100%;}
+
+blockquote {
+  display: block;
+  margin: 0 4em 0.8em 0;
+  padding-left: 12px;
+  border-left: 4px solid #ccc;
+}
+figcaption {font-size: 90%; margin: -0.8em 0 0.8em 18px; font-style: italic;}
+figcaption:before {content: "– ";}
+
+div.codecaption {font-size: 90%; margin: -0.8em 0 0.8em 16px;}
+
+
+a {color: #31adc0; font-weight: bold; text-decoration: none;}
+a:hover {background: #e7e7df}
+a:visited {color: #8cc0ce;}
+a:active {color: #ace0ee;}
+
+nav ul {
+  font-family: sans-serif;
+  margin: 0 0 1em 0;
+  padding: 0.5em 0;
+  line-height: 150%;
+  list-style: none;
+  color: #999;
+  font-weight: bold; font-size: 80%;
+}
+nav ul li {
+  display: inline;
+  white-space: nowrap;
+}
+nav ul li a:after {
+  color: #999;
+  content: " >";
+}
+
+ul {margin: 0 4em 0.8em 2em; padding: 0; list-style-type:square;}
+ol {margin: 0 4em 0.8em 2em; padding: 0;}
+dl {margin: 0 4em 0.8em 0; padding: 0;}
+dt {font-weight: bold; float: left; padding: 0 0.5em 0 0;}
+li {margin: 0 0 0.5em 0;}
+
+ul.none {
+  margin: 0.5em 0 0.8em 0;
+  list-style-type:none;
+  font-family:sans-serif;
+  font-size: 95%;
+}
+ul.none li {margin: 0 0 0.2em 0;}
+
+table.contents {margin: 1em 0 1em 2em; padding:0;}
+table.contents td {vertical-align: top;}
+table.contents ul {
+  font-family: sans-serif;
+  font-size: 90%;
+  line-height: 1.4em;
+  margin: 0;
+  list-style-type: none;
+}
+table.contents ul li {margin: 0 4em 0 0;}
+
+img {margin:0; padding:0;}
+
+img.me {
+  display: block; float: right;
+  border: 1px solid #433;
+  margin-left: 2.4em
+}
+
+.image {margin:16px 0; padding:0;}
+.caption {margin-top:-6px; font-style:italic; font-size:87.5%;}
+.author {font-family:sans-serif; font-size: 95%;}
+
+footer {
+  font-family: sans-serif;
+  margin: 2em 0 1em 0;
+  padding-top: 0.5em;
+  color: #aaa;
+  font-size: 75%; text-align: left;
+  line-height: 140%;
+  clear: both; white-space: nowrap;
+}
+
+@media print {
+  body {
+    color: #000;
+    font: 0.9em/1.3em Georgia,serif;
+  }
+
+  h1 {color: #000;}
+  h2 {color: #000;}
+  h3 {color: #000;}
+  pre {font: 0.9em/1.4em monospace; background: white;}
+
+  a {color: #000; font-weight: normal; text-decoration: none;}
+  a:visited {color: #000; font-weight: normal; text-decoration: none;}
+  a[href^="http://"]:after, a[href^="https://"]:after{
+    content: " [" attr(href) "]";
+    font-size: 90%;
+    text-decoration: none;
+  }
+
+  table.GoJava {
+    font: 0.9em/1.4em monospace;
+    background: white;
+    width: 50em;
+  }
+
+  nav ul {display: none;}
+  table.contents {display: none;}
+  object {display: none;}
+  footer {display: none;}
+}
